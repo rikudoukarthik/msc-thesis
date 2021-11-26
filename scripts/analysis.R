@@ -1,11 +1,10 @@
 # ### Code Metadata ####
 ### 
-### Analysis of thesis data | Part 1 (code by Karthik Thrikkadeeri) 
+### Analysis of thesis data for manuscript 
 ### 
 ### Bird abundances versus habitat variables; 
 ### post-breeding habitat breadth and selectivity of birds
 ### 
-### Start date: 22/02/2021   End date:
 
 
 # Packages ####
@@ -619,7 +618,7 @@ plot(m_data_A1_omn$GuildAbun ~ m_data_A1_omn$Week)
 
 
 inv.0 <- glmmTMB(GuildAbun ~ Observer + (1|Point),
-               data = m_data_A1_inv, family=poisson())
+                 data = m_data_A1_inv, family=poisson())
 summary(inv.0)
 inv.0sim <- simulateResiduals(inv.0)
 plot(inv.0sim)
@@ -890,7 +889,7 @@ plot(m_data_A1_CM$Abun ~ m_data_A1_CM$Week)
 
 
 NM.0 <- glmmTMB(Abun ~ Observer + (1|Point) + (1|Days),
-                 data = m_data_A1_NM, family=poisson())
+                data = m_data_A1_NM, family=poisson())
 summary(NM.0)
 NM.0sim <- simulateResiduals(NM.0)
 plot(NM.0sim)
@@ -1420,7 +1419,7 @@ rm(list=c("ordW1","ordW13","ordW1.si","ordW1.sp","ordW1.ef","ordW13.si","ordW13.
           "ordW13.ef","ordplotW1","ordplotW13",
           "ordPBmean","ordPMmean","ordPBmean.si","ordPBmean.sp","ordPBmean.ef","ordPMmean.si",
           "ordPMmean.sp","ordPMmean.ef","ordplotPBmean","ordplotPMmean"))
-  
+
 set.seed(420)
 
 
@@ -1446,9 +1445,9 @@ ordPB.ef <- rownames_to_column(data.frame(scores(
          permutations = 1000), display="vectors")), "HabVar")
 
 ordPM.si <- inner_join(rownames_to_column(data.frame(ordPM$CA$u), "Point"),
-                        h_data_A1, by="Point") # site scores
+                       h_data_A1, by="Point") # site scores
 ordPM.sp <- inner_join(rownames_to_column(data.frame(ordPM$CA$v), "Spec_code"), 
-                        ordgld, by="Spec_code") # species scores
+                       ordgld, by="Spec_code") # species scores
 ordPM.ef <- rownames_to_column(data.frame(scores(
   envfit(ordPM, h_data_ord, choices=1:2, scaling="species", 
          permutations = 1000), display="vectors")), "HabVar")
@@ -1556,7 +1555,7 @@ ordPM.ef <- rownames_to_column(data.frame(scores(
 
 
 
-  ### ###
+### ###
 
 ### Analysis 4: Building models for caterpillar predation ####
 
@@ -1566,8 +1565,8 @@ ordPM.ef <- rownames_to_column(data.frame(scores(
 # update: data not enough for interactions. tried with glmmTMB too. 
 # "rank deficient" but this not necessarily a problem. 
 # rm(list=c("cat.m0","cat.m1","cat.m2","cat.m3","cat.m4","cat.m5","cat.m6","cat.m7","cat.m8",
-          # "cat.m9","cat.m10","cat.m11","cat.m12","cat.m13","cat.m14","cat.m15","cat.m16",
-          # "cat.m17","cat.m18"))
+# "cat.m9","cat.m10","cat.m11","cat.m12","cat.m13","cat.m14","cat.m15","cat.m16",
+# "cat.m17","cat.m18"))
 # cat.m1 <- update(cat.m0, .~. + CCavgscaled)
 # cat.m2 <- update(cat.m0, .~. + CCavgsd + log(TreeDens))
 # cat.m3 <- update(cat.m0, .~. + poly(CCavg,2))
@@ -1711,8 +1710,8 @@ simulateResiduals(cat.3, plot=T)
 cmult <- 1.96
 
 # theme_simple <- theme_bw() + theme(panel.grid.major = element_blank(),
-                                   # panel.grid.minor = element_blank(),
-                                   # panel.border = element_rect(size=1.2))
+# panel.grid.minor = element_blank(),
+# panel.border = element_rect(size=1.2))
 theme_simple <- theme_classic()
 theme_set(theme_simple)
 
@@ -1733,11 +1732,11 @@ Set3 <- brewer.pal(12, name="Set3")
 
 # number of unique species observed in total = 69
 n_distinct( (b_rawdata %>% 
-              inner_join(b_speccode, by="Spec_code") %>% 
-              filter(Species != is.na(Species)))$Spec_code)
+               inner_join(b_speccode, by="Spec_code") %>% 
+               filter(Species != is.na(Species)))$Spec_code)
 # number of unique species observed in relevant data = 45
 n_distinct( (b_data %>% 
-                filter(Species != is.na(Species)))$Spec_code)
+               filter(Species != is.na(Species)))$Spec_code)
 # number of observations of foraging
 dim(filter(b_rawdata, Foraging==1)) # 570 individual birds foraging
 dim(filter(b_data, Foraging==1)) # 494 individual birds foraging within 30 m
@@ -1775,7 +1774,7 @@ summary(omn.3)
 invAIC <- AICctab(inv.1, inv.2, inv.3, inv.4, weights=T, base=T, logLik=T)
 omnAIC <- AICctab(omn.1, omn.2, omn.3, weights=T, base=T, logLik=T)
 stargazer(rbind(as.data.frame(invAIC), 
-          as.data.frame(omnAIC)), 
+                as.data.frame(omnAIC)), 
           summary = F,
           type="html", 
           out = "D:/COLLEGE/2019 - MSc Ecology/Thesis/4 - birds/2 - Data Analysis/
@@ -1826,7 +1825,7 @@ b_speclistOverall <- b_data %>% ungroup() %>%
                                   Pas_sp = c("Pas_mon","Pas_sp"),
                                   Poe_sp = c("Poe_mon","Poe_pal","Poe_sp"),
                                   Tur_sp = c("Tur_mer","Tur_phi","Tur_pil","Tur_vis","Tur_sp")
-                                  )) %>% 
+  )) %>% 
   group_by(GuildFeed, Spec_code) %>% 
   summarise(TotDet = n()) %>% 
   inner_join(b_speccode[,1:3], by = "Spec_code") %>% 
@@ -1920,7 +1919,7 @@ all.pred2plot <- ggplot(data=all.pred2, mapping=aes(x=DOM, y=BirdAbun, col=facto
   labs(y = "Bird detections per point count",
        x = "Ground vegetation") +
   theme(axis.text.x = element_text(size=7))
-  
+
 
 ## Abun - CCavgsd (for 0 DOM ground layer) ##
 # Week 1
@@ -2018,7 +2017,7 @@ all.pred4plot <- ggplot(data=all.pred4, mapping=aes(x=TreeDens, y=BirdAbun,
 ## Fig.4: analysis 1 ##
 
 ( ( all.pred1plot | (all.pred2plot + theme(axis.title.y = element_blank())) ) ) /
-( ( all.pred3plot | (all.pred4plot + theme(axis.title.y = element_blank())) ) ) +
+  ( ( all.pred3plot | (all.pred4plot + theme(axis.title.y = element_blank())) ) ) +
   plot_layout(guides="collect") +
   plot_annotation(tag_levels = "A") & theme(plot.tag = element_text(size = 16)) -> fig4
 
@@ -2076,7 +2075,7 @@ inv.pred2plot <- ggplot(data=inv.pred2, mapping=aes(x=TPDscaled, y=GuildAbun)) +
   coord_cartesian(ylim=c(0,10)) +
   labs(y = "Invertebrate-feeder detections per point count",
        x = "Proportion of deciduous trees (scaled)") 
-  
+
 
 ## fig5 ##
 
@@ -2194,7 +2193,7 @@ omn.pred2plot <- ggplot(data=omn.pred2, mapping=aes(x=TreeDens, y=GuildAbun,
   coord_cartesian(ylim = c(0,16)) +
   labs(y = "Omnivore detections per point count",
        x = expression(Tree~density~per~100~m^2)) 
-  
+
 
 
 
@@ -2367,7 +2366,7 @@ cat.2pred1plot <- ggplot(data=cat.2pred1,
   coord_cartesian(xlim=c(1,13), ylim=c(0,0.5)) +
   scale_x_continuous(breaks=1:13) +
   labs(y = "Predation rate")
-  
+
 
 
 cat.2pred2a <- data.frame(Week = 5,
@@ -2393,7 +2392,7 @@ cat.2pred2plot <- ggplot(data=cat.2pred2,
   scale_colour_manual(values = cbbPalette[c(7,8,6)]) +
   scale_fill_manual(values = cbbPalette[c(7,8,6)]) +
   geom_point(fun = "mean", stat = "summary", 
-               size = 4, stroke=1.5, shape=21, col="black", 
+             size = 4, stroke=1.5, shape=21, col="black", 
              position = position_dodge(width=0.4)) +
   geom_point(data=filter(cat_data, Week==5|Week==9|Week==12), 
              aes(y = Bird/(Bird+OK)), position = "jitter", 
@@ -2444,8 +2443,8 @@ cat.2pred1plot +
 # correlation with bird abundance
 
 cat_corr <- left_join(select(cat_data, c(1,2,25:28)), 
-                       select(b_data_A1_all, c(1,3,8)), 
-                       by=c("Week","Point")) %>% 
+                      select(b_data_A1_all, c(1,3,8)), 
+                      by=c("Week","Point")) %>% 
   mutate(Pred = Bird/(Bird+OK),
          BirdAbun = ifelse(is.na(BirdAbun), 0, BirdAbun))
 
@@ -2459,12 +2458,12 @@ cat_corrplot <- ggplot(data=cat_corr,
   geom_point(alpha=0.5, size=2, colour="#655B1B", position = "jitter") +
   labs(x = "Bird abundance", y = "Predation rate")
 
-  
+
 # with only insectivores
-  
+
 cat_corr2 <- left_join(select(cat_data, c(1,2,25:28)), 
-                        select(m_data_A1_inv, c(1,3,9)), 
-                        by=c("Week","Point")) %>% 
+                       select(m_data_A1_inv, c(1,3,9)), 
+                       by=c("Week","Point")) %>% 
   mutate(Pred = Bird/(Bird+OK),
          GuildAbun = ifelse(is.na(GuildAbun), 0, GuildAbun))
 
@@ -2481,8 +2480,8 @@ cat_corr2plot <- ggplot(data=cat_corr2,
 
 # with only omnivores
 cat_corr3 <- left_join(select(cat_data, c(1,2,25:28)), 
-                        select(m_data_A1_omn, c(1,3,9)), 
-                        by=c("Week","Point")) %>% 
+                       select(m_data_A1_omn, c(1,3,9)), 
+                       by=c("Week","Point")) %>% 
   mutate(Pred = Bird/(Bird+OK),
          GuildAbun = ifelse(is.na(GuildAbun), 0, GuildAbun))
 
@@ -2522,21 +2521,21 @@ ggsave("Fig8.png", fig8,
 ### Fig.3: average bird detections per point count over the weeks and points ###
 
 fig3 <- 
-(ggplot(b_data_A1_all, aes(x=Week, y=BirdAbun, group=Week)) +
-  geom_point(col="#213B73", size=3.5, stat = "summary",
-             fun.data = mean_se, fun.args = list(mult=2)) +
-  stat_summary(col="#213B73", geom = "errorbar", size=1.5, width=0.2, 
-               fun.data = mean_se, fun.args = list(mult=2)) +
-  scale_y_continuous(breaks = seq(0,40,4)) +
-  scale_x_continuous(breaks = seq(1,13,1)) +
-  coord_cartesian(ylim = c(0,16)) +
-  labs(y = "Bird detections per point count")) /
-(ggplot(b_data_A1_all, aes(x=Point, y=BirdAbun)) + 
-  geom_boxplot(fill="#2E799E", alpha=0.6, size=0.9, outlier.alpha = 1) +
-  scale_y_continuous(breaks = seq(0,40,4)) +
-  labs(y = "Bird detections per point count") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 0.75, size = 8))) + # plots median
-plot_annotation(tag_levels = "A") & theme(plot.tag = element_text(size = 16)) 
+  (ggplot(b_data_A1_all, aes(x=Week, y=BirdAbun, group=Week)) +
+     geom_point(col="#213B73", size=3.5, stat = "summary",
+                fun.data = mean_se, fun.args = list(mult=2)) +
+     stat_summary(col="#213B73", geom = "errorbar", size=1.5, width=0.2, 
+                  fun.data = mean_se, fun.args = list(mult=2)) +
+     scale_y_continuous(breaks = seq(0,40,4)) +
+     scale_x_continuous(breaks = seq(1,13,1)) +
+     coord_cartesian(ylim = c(0,16)) +
+     labs(y = "Bird detections per point count")) /
+  (ggplot(b_data_A1_all, aes(x=Point, y=BirdAbun)) + 
+     geom_boxplot(fill="#2E799E", alpha=0.6, size=0.9, outlier.alpha = 1) +
+     scale_y_continuous(breaks = seq(0,40,4)) +
+     labs(y = "Bird detections per point count") +
+     theme(axis.text.x = element_text(angle = 45, hjust = 0.75, size = 8))) + # plots median
+  plot_annotation(tag_levels = "A") & theme(plot.tag = element_text(size = 16)) 
 
 ggsave("Fig3.png", fig3, 
        width = 18, height = 24, units = "cm", dpi=300)
@@ -2598,36 +2597,36 @@ h_data_DOMtrends <- inner_join(select(h_data_A1, c(1,5,6,12,14,15)),
 
 
 ( ggplot(h_data_DOMtrends) + 
-  geom_boxplot(aes(DOM, TreeDens), 
-               fill="#655B1B", alpha=0.6, size=0.7, outlier.alpha = 1) +
-  scale_y_continuous(breaks = seq(0,20,2)) +
-  scale_x_discrete(labels = c("Bare","Graminoid","Moss","Rubus","Vaccinium")) +
-  labs(y = expression(Tree~density~per~100~m^2),
-       x = "Ground vegetation") ) + 
-( ggplot(h_data_DOMtrends) + 
-  geom_boxplot(aes(DOM, CCavgsd), 
-               fill="#655B1B", alpha=0.6, size=0.7, outlier.alpha = 1) +
-  scale_y_continuous(breaks = seq(0,20,2)) +
-  scale_x_discrete(labels = c("Bare","Graminoid","Moss","Rubus","Vaccinium")) +
-  labs(y = "Canopy heterogeneity",
-       x = "Ground vegetation") ) +
-( ggplot(h_data_DOMtrends) + 
-  geom_boxplot(aes(DOM, TreePropDeci), 
-               fill="#655B1B", alpha=0.6, size=0.7, outlier.alpha = 1) +
-  scale_y_continuous(breaks = seq(0,100,10)) +
-  scale_x_discrete(labels = c("Bare","Graminoid","Moss","Rubus","Vaccinium")) +
-  coord_cartesian(ylim = c(0,100)) +
-  labs(y = "Proportion of deciduous trees",
-       x = "Ground vegetation") ) +
-( ggplot(h_data_DOMtrends) + 
-  geom_boxplot(aes(DOM, Pice_abie), 
-               fill="#655B1B", alpha=0.6, size=0.7, outlier.alpha = 1) +
-  scale_y_continuous(breaks = seq(0,100,10)) +
-  scale_x_discrete(labels = c("Bare","Graminoid","Moss","Rubus","Vaccinium")) +
-  coord_cartesian(ylim = c(0,100)) +
-  labs(y = "Number of spruce trees in canopy",
-       x = "Ground vegetation") ) +
-plot_annotation(tag_levels = "A") & 
+    geom_boxplot(aes(DOM, TreeDens), 
+                 fill="#655B1B", alpha=0.6, size=0.7, outlier.alpha = 1) +
+    scale_y_continuous(breaks = seq(0,20,2)) +
+    scale_x_discrete(labels = c("Bare","Graminoid","Moss","Rubus","Vaccinium")) +
+    labs(y = expression(Tree~density~per~100~m^2),
+         x = "Ground vegetation") ) + 
+  ( ggplot(h_data_DOMtrends) + 
+      geom_boxplot(aes(DOM, CCavgsd), 
+                   fill="#655B1B", alpha=0.6, size=0.7, outlier.alpha = 1) +
+      scale_y_continuous(breaks = seq(0,20,2)) +
+      scale_x_discrete(labels = c("Bare","Graminoid","Moss","Rubus","Vaccinium")) +
+      labs(y = "Canopy heterogeneity",
+           x = "Ground vegetation") ) +
+  ( ggplot(h_data_DOMtrends) + 
+      geom_boxplot(aes(DOM, TreePropDeci), 
+                   fill="#655B1B", alpha=0.6, size=0.7, outlier.alpha = 1) +
+      scale_y_continuous(breaks = seq(0,100,10)) +
+      scale_x_discrete(labels = c("Bare","Graminoid","Moss","Rubus","Vaccinium")) +
+      coord_cartesian(ylim = c(0,100)) +
+      labs(y = "Proportion of deciduous trees",
+           x = "Ground vegetation") ) +
+  ( ggplot(h_data_DOMtrends) + 
+      geom_boxplot(aes(DOM, Pice_abie), 
+                   fill="#655B1B", alpha=0.6, size=0.7, outlier.alpha = 1) +
+      scale_y_continuous(breaks = seq(0,100,10)) +
+      scale_x_discrete(labels = c("Bare","Graminoid","Moss","Rubus","Vaccinium")) +
+      coord_cartesian(ylim = c(0,100)) +
+      labs(y = "Number of spruce trees in canopy",
+           x = "Ground vegetation") ) +
+  plot_annotation(tag_levels = "A") & 
   theme(plot.tag = element_text(size = 16),
         axis.text.x = element_text(size=6)) -> fig10
 
@@ -2641,32 +2640,32 @@ ggsave("Fig10.png", fig10,
 ### Fig.11&12: Detections by observer ###
 
 ( ggplot(m_data_A1_all, aes(Observer, BirdAbun)) +
-   geom_boxplot(fill="#655B1B", alpha=0.6, size=0.7, outlier.alpha = 1) +
-   labs(y = "Bird detections per point count") +
-   scale_y_continuous(breaks = seq(0,40,4)) +
-   coord_cartesian(ylim=c(0,28)) ) +
-( ggplot(b_rawdata_all, aes(Observer, BirdAbun)) +
-   geom_boxplot(fill="#655B1B", alpha=0.6, size=0.7, outlier.alpha = 1) +
-   labs(y = "Bird detections per point count") +
-   scale_y_continuous(breaks = seq(0,60,8)) +
-   coord_cartesian(ylim=c(0,56)) +
-   theme(axis.title.y = element_blank()) ) +
-( ggplot(m_data_A1_all, aes(Observer, BirdAbun, group=Observer)) +
-   geom_bar(stat="summary", fun="sum", fill="#655B1B", alpha=0.6, size=0.7, col="black") +
-   labs(y = "Overall bird detections") +
-   coord_cartesian(ylim=c(0,4000)) +
-   scale_y_continuous(breaks = seq(0,4000,500)) +
-   geom_hline(yintercept = sum(m_data_A1_all$BirdAbun), linetype="dashed", size=1.2) ) +
-( ggplot(b_rawdata_all, aes(Observer, BirdAbun, group=Observer)) +
-   geom_bar(stat="summary", fun="sum", fill="#655B1B", alpha=0.6, size=0.7, col="black") +
-   labs(y = "Overall bird detections") +
-   coord_cartesian(ylim=c(0,8000)) +
-   scale_y_continuous(breaks = seq(0,9000,1000)) +
-   geom_hline(yintercept = sum(b_rawdata_all$BirdAbun), linetype="dashed", size=1.2) +
-   theme(axis.title.y = element_blank()) ) +
+    geom_boxplot(fill="#655B1B", alpha=0.6, size=0.7, outlier.alpha = 1) +
+    labs(y = "Bird detections per point count") +
+    scale_y_continuous(breaks = seq(0,40,4)) +
+    coord_cartesian(ylim=c(0,28)) ) +
+  ( ggplot(b_rawdata_all, aes(Observer, BirdAbun)) +
+      geom_boxplot(fill="#655B1B", alpha=0.6, size=0.7, outlier.alpha = 1) +
+      labs(y = "Bird detections per point count") +
+      scale_y_continuous(breaks = seq(0,60,8)) +
+      coord_cartesian(ylim=c(0,56)) +
+      theme(axis.title.y = element_blank()) ) +
+  ( ggplot(m_data_A1_all, aes(Observer, BirdAbun, group=Observer)) +
+      geom_bar(stat="summary", fun="sum", fill="#655B1B", alpha=0.6, size=0.7, col="black") +
+      labs(y = "Overall bird detections") +
+      coord_cartesian(ylim=c(0,4000)) +
+      scale_y_continuous(breaks = seq(0,4000,500)) +
+      geom_hline(yintercept = sum(m_data_A1_all$BirdAbun), linetype="dashed", size=1.2) ) +
+  ( ggplot(b_rawdata_all, aes(Observer, BirdAbun, group=Observer)) +
+      geom_bar(stat="summary", fun="sum", fill="#655B1B", alpha=0.6, size=0.7, col="black") +
+      labs(y = "Overall bird detections") +
+      coord_cartesian(ylim=c(0,8000)) +
+      scale_y_continuous(breaks = seq(0,9000,1000)) +
+      geom_hline(yintercept = sum(b_rawdata_all$BirdAbun), linetype="dashed", size=1.2) +
+      theme(axis.title.y = element_blank()) ) +
   plot_layout(ncol=4) +
   plot_annotation(tag_levels = "A") & theme(plot.tag = element_text(size = 16)) -> fig11
-  
+
 ggsave("Fig11.png", fig11, 
        width = 20, height = 10, units = "cm", dpi=300)
 
@@ -2711,25 +2710,25 @@ ggsave("Fig12.png", fig12,
 
 b_data_visaud <- b_data %>% 
   mutate(Detection = factor(ifelse(Seen==1 & Heard==0, "Visual", ifelse(Seen==1 & Heard==1,
-                                                                  "Both", "Auditory")),
+                                                                        "Both", "Auditory")),
                             levels = c("Visual","Both","Auditory"))) %>% 
   select(c(1,5,11,12,16,17,27))
 
 ( ggplot(b_data_visaud) +
-  geom_col(aes(Week, Number, fill=Detection)) +
-  scale_fill_viridis_d(direction=-1) +
-  scale_x_continuous(breaks = 1:13) +
-  scale_y_continuous(breaks = seq(0,500,50)) +
-  labs(y = "Number of detections") ) +
-( ggplot(b_data_visaud) +
-  geom_col(aes(Point, Number, fill=Detection)) +
-  scale_fill_viridis_d(direction=-1) +
-  scale_y_continuous(breaks = seq(0,200,20)) +
-  coord_cartesian(ylim = c(0,140)) +
-  labs(y = "Number of detections") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 0.75, size = 8)) ) +
-plot_layout(nrow=2, guides="collect") +
-plot_annotation(tag_levels = "A") & theme(plot.tag = element_text(size = 16)) -> fig13
+    geom_col(aes(Week, Number, fill=Detection)) +
+    scale_fill_viridis_d(direction=-1) +
+    scale_x_continuous(breaks = 1:13) +
+    scale_y_continuous(breaks = seq(0,500,50)) +
+    labs(y = "Number of detections") ) +
+  ( ggplot(b_data_visaud) +
+      geom_col(aes(Point, Number, fill=Detection)) +
+      scale_fill_viridis_d(direction=-1) +
+      scale_y_continuous(breaks = seq(0,200,20)) +
+      coord_cartesian(ylim = c(0,140)) +
+      labs(y = "Number of detections") +
+      theme(axis.text.x = element_text(angle = 45, hjust = 0.75, size = 8)) ) +
+  plot_layout(nrow=2, guides="collect") +
+  plot_annotation(tag_levels = "A") & theme(plot.tag = element_text(size = 16)) -> fig13
 
 ggsave("Fig13.png", fig13, 
        width = 18, height = 16, units = "cm", dpi=300)
@@ -2742,34 +2741,34 @@ ggsave("Fig13.png", fig13,
                  Genus=="Parus"), 
         aes(x=Week, y=Abundance, col=Genus), group=Week) +
     geom_point(size=3.5, stat = "summary",
-                fun.data = mean_se, fun.args = list(mult=2)) +
-    stat_summary(geom = "errorbar", size=1.5, width=0.3, 
-                  fun.data = mean_se, fun.args = list(mult=2)) +
-    scale_color_manual(values = cbbPalette[c(8,4)],
-                       labels = c("P. major","S. europaea")) +
-    guides(col = guide_legend(title = "Species")) +
-  scale_y_continuous(breaks = seq(0,20,2)) +
-     scale_x_continuous(breaks = seq(1,13,1)) +
-     coord_cartesian(ylim = c(0,8), xlim = c(1,13)) +
-     labs(y = "Detections per point count")) +
-(ggplot(filter(b_data_A1, 
-               Genus=="Fringilla"|
-                 Genus=="Cyanistes"), 
-        aes(x=Week, y=Abundance, col=Genus), group=Week) +
-    geom_point(size=3.5, stat = "summary",
                fun.data = mean_se, fun.args = list(mult=2)) +
     stat_summary(geom = "errorbar", size=1.5, width=0.3, 
                  fun.data = mean_se, fun.args = list(mult=2)) +
-   scale_color_manual(values = cbbPalette,
-                      labels = c("C. caeruleus","F. coelebs")) +
-   guides(col = guide_legend(title = "Species")) +
-   scale_y_continuous(breaks = seq(0,20,2)) +
+    scale_color_manual(values = cbbPalette[c(8,4)],
+                       labels = c("P. major","S. europaea")) +
+    guides(col = guide_legend(title = "Species")) +
+    scale_y_continuous(breaks = seq(0,20,2)) +
     scale_x_continuous(breaks = seq(1,13,1)) +
     coord_cartesian(ylim = c(0,8), xlim = c(1,13)) +
-    labs(y = "Detections per point count") +
-    theme(axis.title.y = element_blank())) +
+    labs(y = "Detections per point count")) +
+  (ggplot(filter(b_data_A1, 
+                 Genus=="Fringilla"|
+                   Genus=="Cyanistes"), 
+          aes(x=Week, y=Abundance, col=Genus), group=Week) +
+     geom_point(size=3.5, stat = "summary",
+                fun.data = mean_se, fun.args = list(mult=2)) +
+     stat_summary(geom = "errorbar", size=1.5, width=0.3, 
+                  fun.data = mean_se, fun.args = list(mult=2)) +
+     scale_color_manual(values = cbbPalette,
+                        labels = c("C. caeruleus","F. coelebs")) +
+     guides(col = guide_legend(title = "Species")) +
+     scale_y_continuous(breaks = seq(0,20,2)) +
+     scale_x_continuous(breaks = seq(1,13,1)) +
+     coord_cartesian(ylim = c(0,8), xlim = c(1,13)) +
+     labs(y = "Detections per point count") +
+     theme(axis.title.y = element_blank())) +
   plot_layout(guides = "collect") +
-plot_annotation(tag_levels = "A") & 
+  plot_annotation(tag_levels = "A") & 
   theme(plot.tag = element_text(size = 16),
         legend.text = element_text(face = "italic")) -> figSpAbWe
 
