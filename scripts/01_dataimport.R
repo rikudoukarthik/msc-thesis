@@ -57,7 +57,7 @@ birds1 <- birds0 %>%
 # Modifying for different levels of response:
 
 # all species
-birds1a <- birds1 %>% 
+birds_all <- birds1 %>% 
   ungroup() %>% group_by(Period, Week, Days, Observer, Point, CoD, Weather) %>% 
   summarise(All_Abun = sum(Spec_Abun)) %>% 
   ungroup() %>% group_by(Week) %>% 
@@ -66,7 +66,7 @@ birds1a <- birds1 %>%
          All_HabSel2 = round(All_Abun / (sum(All_Abun) / 32), 4)) # mean across all points
 
 # individual guilds
-birds1b <- birds1 %>% 
+birds_guild <- birds1 %>% 
   ungroup() %>% group_by(Period, Week, Days, Observer, Point, CoD, Weather, GuildFeed) %>% 
   summarise(Guild_Abun = sum(Spec_Abun)) %>%
   ungroup() %>% group_by(Week) %>% 
@@ -75,7 +75,7 @@ birds1b <- birds1 %>%
          Guild_HabSel2 = round(Guild_Abun / (sum(Guild_Abun) / 32), 4)) # mean across all points
 
 # migrants and non-migrants
-birds1c <- birds1 %>% 
+birds_mig <- birds1 %>% 
   ungroup() %>% group_by(Period, Week, Days, Observer, Point, CoD, Weather, Migration75) %>% 
   summarise(Migr_Abun = sum(Spec_Abun)) %>%
   ungroup() %>% group_by(Week) %>% 
@@ -83,12 +83,6 @@ birds1c <- birds1 %>%
          Migr_HabSel = round(Migr_Abun / mean(Migr_Abun), 4), # mean across points present in
          Migr_HabSel2 = round(Migr_Abun / (sum(Migr_Abun) / 32), 4)) # mean across all points
 
-
-birds <- birds1 %>% 
-  left_join(birds1a) %>% 
-  left_join(birds1b) %>% 
-  left_join(birds1c) %>% 
-  ungroup()
 
 
 # species detection information
@@ -112,12 +106,15 @@ habvar <- readxl::read_xlsx("data/data_HabVar_2021Feb26.xlsx", "Point Descriptio
 
 
 # Merging bird and habitat variables into one tibble
-mdata <- left_join(birds2, habvar0, by="Point")
+m_all <- left_join(birds_all, habvar, by="Point")
+m_guild <- left_join(birds_guild, habvar, by="Point")
+m_mig <- left_join(birds_mig, habvar, by="Point")
 
 
 # saving RData for use in analysis
 rm(list = setdiff(ls(envir = .GlobalEnv), 
-                  c("birds","habvar","mdata","birds_codes","birds_summary")), 
+                  c("birds_all","birds_guild","birds_mig","habvar",
+                    "m_all","m_guild","m_mig","birds_codes","birds_summary")), 
    pos = ".GlobalEnv")
 
 save.image("data/01_dataimport.RData")
