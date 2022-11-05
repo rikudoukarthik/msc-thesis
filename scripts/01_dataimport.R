@@ -146,16 +146,26 @@ birds_summary <- birds2 %>%
 # UndDens, TreeRich, UndRich, TreeDiv, UndDiv, DOM, Moss
 
 habvar <- readxl::read_xlsx("data/data_HabVar_2021Feb26.xlsx", "Point Descriptions") %>% 
-  rename(TPD = TreePropDeci) %>% 
-  # scaling variables where necessary
-  mutate(CCavgscaled = scale(CCavg),
-         CCavgsdscaled = scale(CCavgsd),
-         TreeDensscaled = scale(TreeDens),
-         TPDscaled = scale(TPD),
-         UndDensscaled = scale(UndDens)) %>% 
+  # removing cells in which I'd entered summaries in datasheet
+  filter(!is.na(Point)) %>% 
   select(-c(CCavgvar, TreeTot, UndTot)) %>% 
-  # removing cells in which I'd entered summaries
-  filter(!is.na(Point))
+  # renaming variables to be more intuitive
+  rename(CC = CCavg,
+         CH = CCavgsd,
+         TDens = TreeDens,
+         UDens = UndDens,
+         TR = TreeRich,
+         UR = UndRich,
+         TDiv = TreeDiv,
+         UDiv = UndDiv,
+         TPD = TreePropDeci) %>% 
+  # scaling/transforming variables where necessary
+  mutate(scaleCC = as.vector(scale(CC)),
+         scaleCH = as.vector(scale(CH)),
+         scaleTD = as.vector(scale(TDens)),
+         scaleTPD = as.vector(scale(TPD)),
+         scaleUDens = as.vector(scale(UDens)),
+         logCH = log(CH))
 
 
 

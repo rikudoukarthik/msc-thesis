@@ -16,58 +16,58 @@ load("data/01_dataimport.RData")
 
 ### Checking for correlation between habitat variables ############
 
-cor.test(habvar$CCavg, habvar$TreeDens, method = "pearson")
-cor.test(habvar$CCavgsd, habvar$CCavg, method = "pearson")
-cor.test(habvar$CCavgsd, habvar$TreeDens, method = "pearson")
+cor.test(habvar$CC, habvar$TDens, method = "pearson")
+cor.test(habvar$CH, habvar$CC, method = "pearson")
+cor.test(habvar$CH, habvar$TDens, method = "pearson")
 
-plot(habvar$CCavg, habvar$TreeDens)
-plot(habvar$CCavgsd, habvar$CCavg)
-plot(habvar$CCavgsd, habvar$TreeDens)
+plot(habvar$CC, habvar$TDens)
+plot(habvar$CH, habvar$CC)
+plot(habvar$CH, habvar$TDens)
 
-# Strong correlation of CCavg and CCavgsd at high CCavg is a direct physical result 
+# Strong correlation of CC and CH at high CC is a direct physical result 
 # because with higher density of trees, there are less gaps overall and hence the 
 # variability/heterogeneity in cover is also lower.
 
-# CCavgsd does not correlate with TreeDens. 
+# CH does not correlate with TDens. 
 
-# Hence, I can either include just CCavg in the models, which captures partly the 
-# essences of CCavgsd and TreeDens, or I can include the latter two in the models 
-# and exclude CCavg where the two variables would then capture a broader scope
-# of variability than would have been possible with CCavg alone, but might miss
-# some of the core essence of CCavg
+# Hence, I can either include just CC in the models, which captures partly the 
+# essences of CH and TDens, or I can include the latter two in the models 
+# and exclude CC where the two variables would then capture a broader scope
+# of variability than would have been possible with CC alone, but might miss
+# some of the core essence of CC
 
-cor.test(habvar$TPD, habvar$TreeDiv, method = "spearman")
-plot(habvar$TPD, habvar$TreeDiv)
+cor.test(habvar$TPD, habvar$TDiv, method = "spearman")
+plot(habvar$TPD, habvar$TDiv)
 # should test non-linear correlation
 
-nlcor(habvar$TPD, habvar$TreeDiv, plt = T)
+nlcor(habvar$TPD, habvar$TDiv, plt = T)
 # from the plot, it is clear that there is a hump-shaped correlation, but the function
 # is unable to pick it up, probably due to the low sample size (it was working during thesis)
 
 # I think it was Salek 2016 who said proportion of deciduous trees was a better
 # predictor than tree diversity, and since the (non-linear) correlation is very
-# strong here, I think it is better to include TPD and exclude TreeDiv.
+# strong here, I think it is better to include TPD and exclude TDiv.
 
-# Using CCavgsd+TreeDens over using CCavg is not statistically significantly better
+# Using CH+TDens over using CC is not statistically significantly better
 # but has 1.79 less residual deviance and only uses one extra df, so it might be
 # the way to go.
-# Using TreeDiv over TPD has, technically, lower resid. dev. and lower
+# Using TDiv over TPD has, technically, lower resid. dev. and lower
 # Cp, but the difference is negligible (0.25).
 
 
-cor.test(habvar$TPD, habvar$TreeDens, method="pearson")
-plot(habvar$TPD, habvar$TreeDens) # correlated
+cor.test(habvar$TPD, habvar$TDens, method="pearson")
+plot(habvar$TPD, habvar$TDens) # correlated
 
-cor.test(habvar$UndDiv, habvar$TreeDens, method="pearson") # close to sig.
-plot(habvar$UndDiv, habvar$TreeDens) 
+cor.test(habvar$UDiv, habvar$TDens, method="pearson") # close to sig.
+plot(habvar$UDiv, habvar$TDens) 
 
 # not significant
-cor.test(habvar$TPD, habvar$CCavg, method="pearson")
-cor.test(habvar$UndDens, habvar$TreeDens, method="pearson")
-cor.test(habvar$UndRich, habvar$TreeDens, method="pearson")
-cor.test(habvar$UndDens, habvar$CCavgsd, method="pearson")
-cor.test(habvar$UndDiv, habvar$CCavgsd, method="pearson")
-cor.test(habvar$UndRich, habvar$CCavgsd, method="pearson")
+cor.test(habvar$TPD, habvar$CC, method="pearson")
+cor.test(habvar$UDens, habvar$TDens, method="pearson")
+cor.test(habvar$UR, habvar$TDens, method="pearson")
+cor.test(habvar$UDens, habvar$CH, method="pearson")
+cor.test(habvar$UDiv, habvar$CH, method="pearson")
+cor.test(habvar$UR, habvar$CH, method="pearson")
 
 ### ###
 
@@ -117,65 +117,65 @@ summary(all.2d)
 summary(all.2e)
 anova(all.1, all.2e) # Moss ns too
 
-all.2f <- update(all.1, .~. + CCavgscaled)
-all.2g <- update(all.1, .~. + log(CCavgsd) + log(TreeDens))
-AICctab(all.1, all.2f, all.2g) # as expected, sd+TreeDens better than simple CC
+all.2f <- update(all.1, .~. + scaleCC)
+all.2g <- update(all.1, .~. + log(CH) + log(TDens))
+AICctab(all.1, all.2f, all.2g) # as expected, sd+TDens better than simple CC
 summary(all.2g) 
 # dAIC 2.5 so add
-all.2h <- update(all.2g, .~. + log(CCavgsd):log(TreeDens))
+all.2h <- update(all.2g, .~. + log(CH):log(TDens))
 summary(all.2h) 
 # drop interaction 
 drop1(all.2g) # drop main effect of het.
-all.2i <- update(all.1, .~. + poly(log(CCavgsd),2) + poly(log(TreeDens),2))
-all.2j <- update(all.1, .~. + poly(log(CCavgsd),2) + log(TreeDens))
-all.2k <- update(all.1, .~. + log(CCavgsd) + poly(log(TreeDens),2))
+all.2i <- update(all.1, .~. + poly(log(CH),2) + poly(log(TDens),2))
+all.2j <- update(all.1, .~. + poly(log(CH),2) + log(TDens))
+all.2k <- update(all.1, .~. + log(CH) + poly(log(TDens),2))
 AICctab(all.2g, all.2i, all.2j, all.2k)
-# two poly is worst. poly of TreeDens is technically better than poly of CCavgsd
+# two poly is worst. poly of TDens is technically better than poly of CH
 # but both worse than simple linear
 
 rm(list=c("all.2a","all.2b","all.2c","all.2d","all.2e","all.2f",
           "all.2g","all.2h","all.2i","all.2j","all.2k"))
-all.2 <- update(all.1, .~. + log(CCavgsd) + log(TreeDens))
+all.2 <- update(all.1, .~. + log(CH) + log(TDens))
 summary(all.2)
 
 
 # interaction of predictors with Week (of pertinence to question)
-all.3a <- update(all.2, .~. + Week:log(CCavgsd))
-all.3b <- update(all.2, .~. + Week:log(TreeDens))
-all.3c <- update(all.2, .~. + Week:(log(CCavgsd)+log(TreeDens)))
+all.3a <- update(all.2, .~. + Week:log(CH))
+all.3b <- update(all.2, .~. + Week:log(TDens))
+all.3c <- update(all.2, .~. + Week:(log(CH)+log(TDens)))
 AICctab(all.2, all.3a, all.3b, all.3c) 
-# TreeDens seems more important in general (3b over 3a) but both recommended by AIC
+# TDens seems more important in general (3b over 3a) but both recommended by AIC
 
 rm(list=c("all.3a", "all.3b", "all.3c"))
-all.3 <- update(all.2, .~. + Week:(log(CCavgsd)+log(TreeDens)))
+all.3 <- update(all.2, .~. + Week:(log(CH)+log(TDens)))
 summary(all.3)
 
 
 # testing TPD and perhaps dropping others for this
-all.4a <- update(all.3, .~. + TPDscaled)
-all.4b <- update(all.3, .~. + poly(TPDscaled,2))
+all.4a <- update(all.3, .~. + scaleTPD)
+all.4b <- update(all.3, .~. + poly(scaleTPD,2))
 anova(all.4a, all.4b) # poly not preferred
 drop1(all.4a)
-all.4c <- update(all.3, .~. + TPDscaled + Week:TPDscaled)
-all.4d <- update(all.1, .~. + TPDscaled + Week:TPDscaled) # replacing other pred.
-all.4e <- update(all.1, .~. + poly(TPDscaled,2))
+all.4c <- update(all.3, .~. + scaleTPD + Week:scaleTPD)
+all.4d <- update(all.1, .~. + scaleTPD + Week:scaleTPD) # replacing other pred.
+all.4e <- update(all.1, .~. + poly(scaleTPD,2))
 AICctab(all.1, all.2, all.3, all.4a, all.4c, all.4d, all.4e)
 anova(all.1, all.3)
 # TPD not useful
-# trying TreeDiv
-all.4f <- update(all.3, .~. + TreeDiv) # failed to converge 0.0112 (tot 0.002)
-all.4g <- update(all.3, .~. + poly(TreeDiv,2)) # failed to converge 0.0248 (tot 0.002)
+# trying TDiv
+all.4f <- update(all.3, .~. + TDiv) # failed to converge 0.0112 (tot 0.002)
+all.4g <- update(all.3, .~. + poly(TDiv,2)) # failed to converge 0.0248 (tot 0.002)
 AICctab(all.3, all.4f, all.4g)
-# TreeDiv not useful
+# TDiv not useful
 
-# trying UndDens
-all.4h <- update(all.3, .~. + sqrt(UndDens))
-all.4i <- update(all.3, .~. + poly(sqrt(UndDens),2))
-all.4j <- update(all.1, .~. + poly(sqrt(UndDens),2))
-all.4k <- update(all.1, .~. + Week*poly(sqrt(UndDens),2))
+# trying UDens
+all.4h <- update(all.3, .~. + sqrt(UDens))
+all.4i <- update(all.3, .~. + poly(sqrt(UDens),2))
+all.4j <- update(all.1, .~. + poly(sqrt(UDens),2))
+all.4k <- update(all.1, .~. + Week*poly(sqrt(UDens),2))
 AICctab(all.3, all.4h, all.4i, all.4j, all.4k)
 anova(all.3, all.4i)
-# UndDens not useful
+# UDens not useful
 # trying DOM
 all.4l <- update(all.3, .~. + DOM)
 anova(all.3, all.4l)
@@ -197,8 +197,8 @@ testDispersion(all.4sim) # 1.2055 but p value sig because of sample size
 
 hist(all.4sim) # uniform as should be
 plotResiduals(all.4sim, form=mdata$Week)
-plotResiduals(all.4sim, form=mdata$CCavgsd)
-plotResiduals(all.4sim, form=mdata$TreeDens)
+plotResiduals(all.4sim, form=mdata$CH)
+plotResiduals(all.4sim, form=mdata$TDens)
 plotResiduals(all.4sim, form=mdata$DOM)
 # all good
 
@@ -221,26 +221,26 @@ hist(all.5sim)
 
 # further selection
 
-all.6a <- update(all.5, .~. - Week:(log(CCavgsd)+log(TreeDens)))
-all.6b <- update(all.5, .~. - Week:(log(CCavgsd)+log(TreeDens)) - log(CCavgsd))
-all.6c <- update(all.5, .~. - Week:(log(CCavgsd)+log(TreeDens)) - log(TreeDens))
-all.6d <- update(all.5, .~. - Week*(log(CCavgsd)+log(TreeDens)))
+all.6a <- update(all.5, .~. - Week:(log(CH)+log(TDens)))
+all.6b <- update(all.5, .~. - Week:(log(CH)+log(TDens)) - log(CH))
+all.6c <- update(all.5, .~. - Week:(log(CH)+log(TDens)) - log(TDens))
+all.6d <- update(all.5, .~. - Week*(log(CH)+log(TDens)))
 
 AICctab(all.1, all.2, all.3, all.4, all.5, all.6a, all.6b, all.6c, all.6d,
         weights=T, base=T, logLik=T)
 rm(list=c("all.6a","all.6b","all.6c","all.6d"))
 
-all.6 <- update(all.5, .~. - Week:(log(CCavgsd)+log(TreeDens)))
+all.6 <- update(all.5, .~. - Week:(log(CH)+log(TDens)))
 AICctab(all.1, all.2, all.3, all.4, all.5, all.6, weights=T, base=T, logLik=T)
 summary(all.6)
 
-# interactions between predictors. CCavgsd:DOM sig but mostly for Moss (only 2 Points)
-# all.6e <- update(all.6, .~. + DOM*log(CCavgsd))
-# all.6f <- update(all.6, .~. + DOM*log(TreeDens))
-# all.6g <- update(all.6, .~. + DOM*(log(CCavgsd)+log(TreeDens)))
+# interactions between predictors. CH:DOM sig but mostly for Moss (only 2 Points)
+# all.6e <- update(all.6, .~. + DOM*log(CH))
+# all.6f <- update(all.6, .~. + DOM*log(TDens))
+# all.6g <- update(all.6, .~. + DOM*(log(CH)+log(TDens)))
 # AICctab(all.6, all.6e, all.6f, all.6g)
 # 
-# all.6h <- update(all.6, .~. + DOM*log(CCavgsd) - log(TreeDens))
+# all.6h <- update(all.6, .~. + DOM*log(CH) - log(TDens))
 # AICctab(all.6, all.6e, all.6f, all.6g, all.6h)
 # 
 # summary(all.6e)
@@ -328,69 +328,69 @@ inv.1 <- update(inv.0, .~. + Moss)
 anova(inv.0, inv.1)
 
 
-inv.2a <- update(inv.1, .~. + log(CCavgsd) + log(TreeDens))
-inv.2b <- update(inv.1, .~. + poly(log(CCavgsd),2) + log(TreeDens))
-inv.2c <- update(inv.1, .~. + log(CCavgsd) + poly(log(TreeDens),2))
-inv.2d <- update(inv.1, .~. + poly(log(CCavgsd),2) + poly(log(TreeDens),2))
-inv.2e <- update(inv.1, .~. + log(CCavgsd)*Week + log(TreeDens)*Week)
+inv.2a <- update(inv.1, .~. + log(CH) + log(TDens))
+inv.2b <- update(inv.1, .~. + poly(log(CH),2) + log(TDens))
+inv.2c <- update(inv.1, .~. + log(CH) + poly(log(TDens),2))
+inv.2d <- update(inv.1, .~. + poly(log(CH),2) + poly(log(TDens),2))
+inv.2e <- update(inv.1, .~. + log(CH)*Week + log(TDens)*Week)
 AICctab(inv.1, inv.2a, inv.2b, inv.2c, inv.2d, inv.2e)
 # although still ns, the interaction with Week has the closest AIC to inv.1
-inv.2f <- update(inv.1, .~. + poly(log(CCavgsd),2)*Week + poly(log(TreeDens),2)*Week)
+inv.2f <- update(inv.1, .~. + poly(log(CH),2)*Week + poly(log(TDens),2)*Week)
 AICctab(inv.1, inv.2a, inv.2b, inv.2c, inv.2d, inv.2e, inv.2f)
 
-inv.2g <- update(inv.1, .~. + log(CCavgsd)*Week + log(TreeDens))
-inv.2h <- update(inv.1, .~. + log(CCavgsd) + log(TreeDens)*Week)
+inv.2g <- update(inv.1, .~. + log(CH)*Week + log(TDens))
+inv.2h <- update(inv.1, .~. + log(CH) + log(TDens)*Week)
 AICctab(inv.1, inv.2a, inv.2b, inv.2c, inv.2d, inv.2e, inv.2f, inv.2g, inv.2h)
-inv.2i <- update(inv.1, .~. + log(CCavgsd)*Week + poly(log(TreeDens),2))
-inv.2j <- update(inv.1, .~. + log(CCavgsd) + poly(log(TreeDens),2)*Week)
+inv.2i <- update(inv.1, .~. + log(CH)*Week + poly(log(TDens),2))
+inv.2j <- update(inv.1, .~. + log(CH) + poly(log(TDens),2)*Week)
 AICctab(inv.1, inv.2a, inv.2c, inv.2e, inv.2h, inv.2i, inv.2j)
-inv.2k <- update(inv.1, .~. + log(TreeDens)*Week)
-inv.2l <- update(inv.1, .~. + log(TreeDens))
-inv.2m <- update(inv.1, .~. + log(CCavgsd)*Week)
-inv.2n <- update(inv.1, .~. + log(CCavgsd))
+inv.2k <- update(inv.1, .~. + log(TDens)*Week)
+inv.2l <- update(inv.1, .~. + log(TDens))
+inv.2m <- update(inv.1, .~. + log(CH)*Week)
+inv.2n <- update(inv.1, .~. + log(CH))
 AICctab(inv.1, inv.2l, inv.2m, inv.2n, inv.2k)
 # not useful!
 
-inv.2o <- update(inv.1, .~. + TPDscaled)
-inv.2p <- update(inv.1, .~. + TPDscaled*Week)
-inv.2q <- update(inv.1, .~. + poly(TPDscaled,2))
-inv.2r <- update(inv.1, .~. + poly(TPDscaled,2)*Week)
+inv.2o <- update(inv.1, .~. + scaleTPD)
+inv.2p <- update(inv.1, .~. + scaleTPD*Week)
+inv.2q <- update(inv.1, .~. + poly(scaleTPD,2))
+inv.2r <- update(inv.1, .~. + poly(scaleTPD,2)*Week)
 AICctab(inv.1, inv.2p, inv.2q, inv.2r, inv.2o)
 inv.2s <- update(inv.1, .~. + TPD)
 inv.2t <- update(inv.1, .~. + poly(TPD,2))
 AICctab(inv.1, inv.2o, inv.2p, inv.2q, inv.2t)
-inv.2u <- update(inv.1, .~. + poly(TPDscaled,3))
-inv.2v <- update(inv.1, .~. + poly(TPDscaled,4))
+inv.2u <- update(inv.1, .~. + poly(scaleTPD,3))
+inv.2v <- update(inv.1, .~. + poly(scaleTPD,4))
 AICctab(inv.1, inv.2o, inv.2q, inv.2u, inv.2v)
 # only linear main effect of TPD
 rm(list=c("inv.2a","inv.2b","inv.2c","inv.2d","inv.2e","inv.2f","inv.2g","inv.2h","inv.2i",
           "inv.2j","inv.2k","inv.2l","inv.2m","inv.2n","inv.2o","inv.2p","inv.2q","inv.2r",
           "inv.2s","inv.2t","inv.2u","inv.2v"))
-inv.2 <- update(inv.1, .~. + TPDscaled)
+inv.2 <- update(inv.1, .~. + scaleTPD)
 
 
-inv.3a <- update(inv.2, .~. - TPDscaled + TreeDiv)
-inv.3b <- update(inv.2, .~. + TreeDiv)
-inv.3c <- update(inv.2, .~. + poly(TreeDiv,2))
-inv.3d <- update(inv.2, .~. + TreeDiv*Week)
+inv.3a <- update(inv.2, .~. - scaleTPD + TDiv)
+inv.3b <- update(inv.2, .~. + TDiv)
+inv.3c <- update(inv.2, .~. + poly(TDiv,2))
+inv.3d <- update(inv.2, .~. + TDiv*Week)
 AICctab(inv.2, inv.3a, inv.3b, inv.3c, inv.3d)
-# TreeDiv not important
-inv.3e <- update(inv.2, .~. + sqrt(UndDens))
-inv.3f <- update(inv.2, .~. + poly(sqrt(UndDens),2))
-inv.3g <- update(inv.2, .~. + sqrt(UndDens)*Week)
-inv.3h <- update(inv.2, .~. + poly(sqrt(UndDens),2)*Week)
+# TDiv not important
+inv.3e <- update(inv.2, .~. + sqrt(UDens))
+inv.3f <- update(inv.2, .~. + poly(sqrt(UDens),2))
+inv.3g <- update(inv.2, .~. + sqrt(UDens)*Week)
+inv.3h <- update(inv.2, .~. + poly(sqrt(UDens),2)*Week)
 AICctab(inv.2, inv.3e, inv.3f, inv.3g, inv.3h)
-# UndDens not important
-inv.3i <- update(inv.2, .~. + TreeRich)
-inv.3j <- update(inv.2, .~. + TreeRich*Week)
+# UDens not important
+inv.3i <- update(inv.2, .~. + TR)
+inv.3j <- update(inv.2, .~. + TR*Week)
 AICctab(inv.2, inv.3i, inv.3j)
-inv.3k <- update(inv.2, .~. + poly(TreeRich,2))
+inv.3k <- update(inv.2, .~. + poly(TR,2))
 AICctab(inv.2, inv.3i, inv.3k)
-# interesting how abundance increases with TreeRich but decreases with TPD (and poly ns)
+# interesting how abundance increases with TR but decreases with TPD (and poly ns)
 
 rm(list=c("inv.3a","inv.3b","inv.3c","inv.3d","inv.3e","inv.3f","inv.3g","inv.3h","inv.3i",
           "inv.3j","inv.3k"))
-inv.3 <- update(inv.2, .~. + TreeRich)
+inv.3 <- update(inv.2, .~. + TR)
 summary(inv.3)
 
 
@@ -402,14 +402,14 @@ inv.4d <- update(inv.3, .~. + DOM*Week - Moss)
 AICctab(inv.3, inv.4a, inv.4b, inv.4c, inv.4d) # 4c better only 0.1 dAICc on 1df
 summary(inv.4c)
 summary(inv.4a)
-inv.4e <- update(inv.3, .~. + DOM - TreeRich)
+inv.4e <- update(inv.3, .~. + DOM - TR)
 AICctab(inv.3, inv.4a, inv.4c, inv.4e)
-inv.4f <- update(inv.3, .~. + DOM - TreeRich - Moss)
+inv.4f <- update(inv.3, .~. + DOM - TR - Moss)
 AICctab(inv.3, inv.4a, inv.4c, inv.4e, inv.4f)
-# effect of TreeRich prob. caused by STRONG effect of Carex. 
-# All Carex Points have low TreeRich
+# effect of TR prob. caused by STRONG effect of Carex. 
+# All Carex Points have low TR
 rm(list=c("inv.4a","inv.4b","inv.4c","inv.4d","inv.4e","inv.4f"))
-inv.4 <- update(inv.3, .~. + DOM - TreeRich - Moss)
+inv.4 <- update(inv.3, .~. + DOM - TR - Moss)
 summary(inv.4)
 
 
@@ -477,49 +477,49 @@ omn.2 <- update(omn.1, .~. + HabClass)
 anova(omn.1, omn.2)
 
 
-omn.3a <- update(omn.2, .~. + log(CCavgsd) + log(TreeDens))
-omn.3b <- update(omn.2, .~. + poly(log(CCavgsd),2) + log(TreeDens))
-omn.3c <- update(omn.2, .~. + log(CCavgsd) + poly(log(TreeDens),2))
-omn.3d <- update(omn.2, .~. + poly(log(CCavgsd),2) + poly(log(TreeDens),2))
-omn.3e <- update(omn.2, .~. + log(CCavgsd)*Week + log(TreeDens)*Week)
+omn.3a <- update(omn.2, .~. + log(CH) + log(TDens))
+omn.3b <- update(omn.2, .~. + poly(log(CH),2) + log(TDens))
+omn.3c <- update(omn.2, .~. + log(CH) + poly(log(TDens),2))
+omn.3d <- update(omn.2, .~. + poly(log(CH),2) + poly(log(TDens),2))
+omn.3e <- update(omn.2, .~. + log(CH)*Week + log(TDens)*Week)
 AICctab(omn.2, omn.3a, omn.3b, omn.3c, omn.3d, omn.3e)
 # no poly
-omn.3f <- update(omn.2, .~. + log(CCavgsd)*Week + log(TreeDens))
-omn.3g <- update(omn.2, .~. + log(CCavgsd) + log(TreeDens)*Week)
+omn.3f <- update(omn.2, .~. + log(CH)*Week + log(TDens))
+omn.3g <- update(omn.2, .~. + log(CH) + log(TDens)*Week)
 AICctab(omn.2, omn.3a, omn.3b, omn.3c, omn.3d, omn.3e, omn.3f, omn.3g)
-# interaction CCavgsd:Week + TD is best
-omn.3h <- update(omn.2, .~. + log(CCavgsd)*Week) 
-omn.3i <- update(omn.2, .~. + log(CCavgsd))
+# interaction CH:Week + TD is best
+omn.3h <- update(omn.2, .~. + log(CH)*Week) 
+omn.3i <- update(omn.2, .~. + log(CH))
 AICctab(omn.2, omn.3a, omn.3f, omn.3h, omn.3i)
 
 rm(list=c("omn.3a","omn.3b","omn.3c","omn.3d","omn.3e","omn.3f","omn.3g","omn.3h","omn.3i"))
-omn.3 <- update(omn.2, .~. + log(CCavgsd)*Week + log(TreeDens))
+omn.3 <- update(omn.2, .~. + log(CH)*Week + log(TDens))
 
 
-omn.4a <- update(omn.3, .~. + TPDscaled - log(TreeDens))
-omn.4b <- update(omn.3, .~. + TPDscaled) 
+omn.4a <- update(omn.3, .~. + scaleTPD - log(TDens))
+omn.4b <- update(omn.3, .~. + scaleTPD) 
 AICctab(omn.3, omn.4a, omn.4b) # keep
-omn.4c <- update(omn.3, .~. + TPDscaled*Week)
-omn.4d <- update(omn.3, .~. + poly(TPDscaled,2))
-omn.4e <- update(omn.3, .~. + poly(TPDscaled,2)*Week)
+omn.4c <- update(omn.3, .~. + scaleTPD*Week)
+omn.4d <- update(omn.3, .~. + poly(scaleTPD,2))
+omn.4e <- update(omn.3, .~. + poly(scaleTPD,2)*Week)
 AICctab(omn.3, omn.4a, omn.4b, omn.4c, omn.4d)
 # not significant
-omn.4f <- update(omn.3, .~. + TreeDiv)
-omn.4g <- update(omn.3, .~. + poly(TreeDiv,2))
-omn.4h <- update(omn.3, .~. + TreeDiv*Week)
-omn.4i <- update(omn.3, .~. + poly(TreeDiv,2)*Week)
+omn.4f <- update(omn.3, .~. + TDiv)
+omn.4g <- update(omn.3, .~. + poly(TDiv,2))
+omn.4h <- update(omn.3, .~. + TDiv*Week)
+omn.4i <- update(omn.3, .~. + poly(TDiv,2)*Week)
 AICctab(omn.3, omn.4f, omn.4g, omn.4h, omn.4i)
 # not significant
-omn.4j <- update(omn.3, .~. + UndDensscaled)
-omn.4k <- update(omn.3, .~. + poly(UndDensscaled,2))
-omn.4l <- update(omn.3, .~. + UndDensscaled*Week)
-omn.4m <- update(omn.3, .~. + poly(UndDensscaled,2)*Week)
+omn.4j <- update(omn.3, .~. + scaleUDens)
+omn.4k <- update(omn.3, .~. + poly(scaleUDens,2))
+omn.4l <- update(omn.3, .~. + scaleUDens*Week)
+omn.4m <- update(omn.3, .~. + poly(scaleUDens,2)*Week)
 AICctab(omn.3, omn.4j, omn.4k, omn.4l, omn.4m)
 # not significant
-omn.4n <- update(omn.3, .~. + TreeRich)
-omn.4o <- update(omn.3, .~. + TreeRich*Week)
-omn.4p <- update(omn.3, .~. + poly(TreeRich,2))
-omn.4q <- update(omn.3, .~. + poly(TreeRich,2)*Week)
+omn.4n <- update(omn.3, .~. + TR)
+omn.4o <- update(omn.3, .~. + TR*Week)
+omn.4p <- update(omn.3, .~. + poly(TR,2))
+omn.4q <- update(omn.3, .~. + poly(TR,2)*Week)
 AICctab(omn.3, omn.4n, omn.4o, omn.4p, omn.4q)
 # not significant
 omn.4r <- update(omn.3, .~. + DOM) 
