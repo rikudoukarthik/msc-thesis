@@ -83,109 +83,109 @@ summary(all0)
 
 
 # adding Week and testing for polynomial 
-all1a <- update(all0, . ~ . + Week)
-all1b <- update(all0, . ~ . + poly(Week, 2))
-all1c <- update(all0, . ~ . + poly(Week, 3))
-anova(all1a, all1b) 
-AICctab(all1a, all1b, all1c) # returns best model on top and delta calculated from that
+a <- update(all0, . ~ . + Week)
+b <- update(all0, . ~ . + poly(Week, 2))
+c <- update(all0, . ~ . + poly(Week, 3))
+anova(a, b) 
+AICctab(a, b, c) # returns best model on top and delta calculated from that
 # 2nd and 3rd not better than linear
-rm(list = c("all1a", "all1b", "all1c"))
+rm(list = c("a", "b", "c"))
 
 all1 <- update(all0, .~. + Week)
 summary(all1)
 
 
 # testing nuisance variables like time of count during day 
-all2a <- update(all1, . ~ . + CoD)
-all2b <- update(all1, . ~ . + poly(CoD, 2))
-anova(all1, all2a) 
-AICctab(all1, all2a, all2b)
+a <- update(all1, . ~ . + CoD)
+b <- update(all1, . ~ . + poly(CoD, 2))
+anova(all1, a) 
+AICctab(all1, a, b)
 # neither linear nor poly significant
-all2c <- update(all2b, . ~ . + Weather)
-AICctab(all1, all2b, all2c) 
+c <- update(b, . ~ . + Weather)
+AICctab(all1, b, c) 
 # Weather not significant
 
 # finally moving to predictors of interest
-all2d <- update(all1, .~. + HabClass)
-all2e <- update(all1, .~. + Moss)
-AICctab(all1, all2d, all2e)
-anova(all1, all2d)
-summary(all2d)
+d <- update(all1, .~. + HabClass)
+e <- update(all1, .~. + Moss)
+AICctab(all1, d, e)
+anova(all1, d)
+summary(d)
 # summary function shows that Interior is marginally significant (0.04) but other levels
 # are not. AIC is not different at all So will have to ignore.
 # summary() p value cannot be relied on.
-summary(all2e)
-anova(all1, all2e) # Moss ns too
+summary(e)
+anova(all1, e) # Moss ns too
 
-all2f <- update(all1, .~. + scaleCC)
-all2g <- update(all1, .~. + log(CH) + log(TDens))
-AICctab(all1, all2f, all2g) # as expected, sd+TDens better than simple CC
-summary(all2g) 
+f <- update(all1, .~. + scaleCC)
+g <- update(all1, .~. + log(CH) + log(TDens))
+AICctab(all1, f, g) # as expected, sd+TDens better than simple CC
+summary(g) 
 # dAIC 2.5 so add
-all2h <- update(all2g, .~. + log(CH):log(TDens))
-summary(all2h) 
+h <- update(g, .~. + log(CH):log(TDens))
+summary(h) 
 # drop interaction 
-drop1(all2g) # drop main effect of het.
-all2i <- update(all1, .~. + poly(log(CH),2) + poly(log(TDens),2))
-all2j <- update(all1, .~. + poly(log(CH),2) + log(TDens))
-all2k <- update(all1, .~. + log(CH) + poly(log(TDens),2))
-AICctab(all2g, all2i, all2j, all2k)
+drop1(g) # drop main effect of het.
+i <- update(all1, .~. + poly(log(CH),2) + poly(log(TDens),2))
+j <- update(all1, .~. + poly(log(CH),2) + log(TDens))
+k <- update(all1, .~. + log(CH) + poly(log(TDens),2))
+AICctab(g, i, j, k)
 # two poly is worst. poly of TDens is technically better than poly of CH
 # but both worse than simple linear
 
-rm(list=c("all2a","all2b","all2c","all2d","all2e","all2f",
-          "all2g","all2h","all2i","all2j","all2k"))
+rm(list=c("a","b","c","d","e","f",
+          "g","h","i","j","k"))
 all2 <- update(all1, .~. + log(CH) + log(TDens))
 summary(all2)
 
 
 # interaction of predictors with Week (of pertinence to question)
-all3a <- update(all2, .~. + Week:log(CH))
-all3b <- update(all2, .~. + Week:log(TDens))
-all3c <- update(all2, .~. + Week:(log(CH)+log(TDens)))
-AICctab(all2, all3a, all3b, all3c) 
+a <- update(all2, .~. + Week:log(CH))
+b <- update(all2, .~. + Week:log(TDens))
+c <- update(all2, .~. + Week:(log(CH)+log(TDens)))
+AICctab(all2, a, b, c) 
 # TDens seems more important in general (3b over 3a) but both recommended by AIC
 
-rm(list=c("all3a", "all3b", "all3c"))
+rm(list=c("a", "b", "c"))
 all3 <- update(all2, .~. + Week:(log(CH)+log(TDens)))
 summary(all3)
 
 
 # testing TPD and perhaps dropping others for this
-all4a <- update(all3, .~. + scaleTPD)
-all4b <- update(all3, .~. + poly(scaleTPD,2))
-anova(all4a, all4b) # poly not preferred
-drop1(all4a)
-all4c <- update(all3, .~. + scaleTPD + Week:scaleTPD)
-all4d <- update(all1, .~. + scaleTPD + Week:scaleTPD) # replacing other pred.
-all4e <- update(all1, .~. + poly(scaleTPD,2))
-AICctab(all1, all2, all3, all4a, all4c, all4d, all4e)
+a <- update(all3, .~. + scaleTPD)
+b <- update(all3, .~. + poly(scaleTPD,2))
+anova(a, b) # poly not preferred
+drop1(a)
+c <- update(all3, .~. + scaleTPD + Week:scaleTPD)
+d <- update(all1, .~. + scaleTPD + Week:scaleTPD) # replacing other pred.
+e <- update(all1, .~. + poly(scaleTPD,2))
+AICctab(all1, all2, all3, a, c, d, e)
 anova(all1, all3)
 # TPD not useful
 # trying TDiv
-all4f <- update(all3, .~. + TDiv) # failed to converge 0.0112 (tot 0.002)
-all4g <- update(all3, .~. + poly(TDiv,2)) # failed to converge 0.0248 (tot 0.002)
-AICctab(all3, all4f, all4g)
+f <- update(all3, .~. + TDiv) # failed to converge 0.0112 (tot 0.002)
+g <- update(all3, .~. + poly(TDiv,2)) # failed to converge 0.0248 (tot 0.002)
+AICctab(all3, f, g)
 # TDiv not useful
 
 # trying UDens
-all4h <- update(all3, .~. + sqrt(UDens))
-all4i <- update(all3, .~. + poly(sqrt(UDens),2))
-all4j <- update(all1, .~. + poly(sqrt(UDens),2))
-all4k <- update(all1, .~. + Week*poly(sqrt(UDens),2))
-AICctab(all3, all4h, all4i, all4j, all4k)
-anova(all3, all4i)
+h <- update(all3, .~. + sqrt(UDens))
+i <- update(all3, .~. + poly(sqrt(UDens),2))
+j <- update(all1, .~. + poly(sqrt(UDens),2))
+k <- update(all1, .~. + Week*poly(sqrt(UDens),2))
+AICctab(all3, h, i, j, k)
+anova(all3, i)
 # UDens not useful
 # trying DOM
-all4l <- update(all3, .~. + DOM)
-anova(all3, all4l)
-all4m <- update(all3, .~. + DOM + Week:DOM)
-AICctab(all3, all4l, all4m)
+l <- update(all3, .~. + DOM)
+anova(all3, l)
+m <- update(all3, .~. + DOM + Week:DOM)
+AICctab(all3, l, m)
 # DOM main effect and interaction with Week
 
 
-rm(list=c("all4a","all4b","all4c","all4d","all4e","all4f","all4g",
-          "all4h","all4i","all4j","all4k","all4l","all4m"))
+rm(list=c("a","b","c","d","e","f","g",
+          "h","i","j","k","l","m"))
 all4 <- update(all3, .~. + DOM + Week:DOM)
 
 
@@ -221,32 +221,32 @@ hist(all5sim)
 
 # further selection
 
-all6a <- update(all5, .~. - Week:(log(CH)+log(TDens)))
-all6b <- update(all5, .~. - Week:(log(CH)+log(TDens)) - log(CH))
-all6c <- update(all5, .~. - Week:(log(CH)+log(TDens)) - log(TDens))
-all6d <- update(all5, .~. - Week*(log(CH)+log(TDens)))
+a <- update(all5, .~. - Week:(log(CH)+log(TDens)))
+b <- update(all5, .~. - Week:(log(CH)+log(TDens)) - log(CH))
+c <- update(all5, .~. - Week:(log(CH)+log(TDens)) - log(TDens))
+d <- update(all5, .~. - Week*(log(CH)+log(TDens)))
 
-AICctab(all1, all2, all3, all4, all5, all6a, all6b, all6c, all6d,
+AICctab(all1, all2, all3, all4, all5, a, b, c, d,
         weights=T, base=T, logLik=T)
-rm(list=c("all6a","all6b","all6c","all6d"))
+rm(list=c("a","b","c","d"))
 
 all6 <- update(all5, .~. - Week:(log(CH)+log(TDens)))
 AICctab(all1, all2, all3, all4, all5, all6, weights=T, base=T, logLik=T)
 summary(all6)
 
 # interactions between predictors. CH:DOM sig but mostly for Moss (only 2 Points)
-# all6e <- update(all6, .~. + DOM*log(CH))
-# all6f <- update(all6, .~. + DOM*log(TDens))
-# all6g <- update(all6, .~. + DOM*(log(CH)+log(TDens)))
-# AICctab(all6, all6e, all6f, all6g)
+# e <- update(all6, .~. + DOM*log(CH))
+# f <- update(all6, .~. + DOM*log(TDens))
+# g <- update(all6, .~. + DOM*(log(CH)+log(TDens)))
+# AICctab(all6, e, f, g)
 # 
-# all6h <- update(all6, .~. + DOM*log(CH) - log(TDens))
-# AICctab(all6, all6e, all6f, all6g, all6h)
+# h <- update(all6, .~. + DOM*log(CH) - log(TDens))
+# AICctab(all6, e, f, g, h)
 # 
-# summary(all6e)
-# plot(allEffects(all6e))
-# plot(allEffects(all6h))
-# rm(list=c("all6e","all6f","all6g","all6h"))
+# summary(e)
+# plot(allEffects(e))
+# plot(allEffects(h))
+# rm(list=c("e","f","g","h"))
 
 
 
@@ -297,118 +297,118 @@ hist(inv0sim)
 
 
 # adding Week and testing poly
-inv1a <- update(inv0, .~. + Week)
-inv1b <- update(inv0, .~. + poly(Week,2))
-AICctab(inv0, inv1a, inv1b)
+a <- update(inv0, .~. + Week)
+b <- update(inv0, .~. + poly(Week,2))
+AICctab(inv0, a, b)
 # main effect not significant
 # nuisance variables like CoD and Weather
-inv1c <- update(inv0, .~. + CoD)
-inv1d <- update(inv0, .~. + poly(CoD,2))
-inv1e <- update(inv0, .~. + Weather)
-AICctab(inv0, inv1c, inv1d, inv1e)
+c <- update(inv0, .~. + CoD)
+d <- update(inv0, .~. + poly(CoD,2))
+e <- update(inv0, .~. + Weather)
+AICctab(inv0, c, d, e)
 # not significant
 
 # predictors of interest
-inv1f <- update(inv0, .~. + HabClass)
-inv1g <- update(inv0, .~. + Moss)
-AICctab(inv0, inv1f, inv1g)
-inv1h <- update(inv0, .~. + HabClass*Week)
-AICctab(inv0, inv1f, inv1g, inv1h)
+f <- update(inv0, .~. + HabClass)
+g <- update(inv0, .~. + Moss)
+AICctab(inv0, f, g)
+h <- update(inv0, .~. + HabClass*Week)
+AICctab(inv0, f, g, h)
 # habclass not useful at all Moss is.
-inv1i <- update(inv0, .~. + Moss*Week)
-AICctab(inv0, inv1g, inv1i)
-summary(inv1i)
+i <- update(inv0, .~. + Moss*Week)
+AICctab(inv0, g, i)
+summary(i)
 # interaction has 1.4 less AIC on 2 df, so will not include, 
 # even though it is pertinent to question. 
-inv1j <- update(inv0, .~. + Moss*poly(Week,2))
-AICctab(inv0, inv1g, inv1i, inv1j)
+j <- update(inv0, .~. + Moss*poly(Week,2))
+AICctab(inv0, g, i, j)
 
-rm(list=c("inv1a","inv1b","inv1c","inv1d","inv1e","inv1f","inv1g","inv1h","inv1i","inv1j"))
+rm(list=c("a","b","c","d","e","f","g","h","i","j"))
 inv1 <- update(inv0, .~. + Moss)
 anova(inv0, inv1)
 
 
-inv2a <- update(inv1, .~. + log(CH) + log(TDens))
-inv2b <- update(inv1, .~. + poly(log(CH),2) + log(TDens))
-inv2c <- update(inv1, .~. + log(CH) + poly(log(TDens),2))
-inv2d <- update(inv1, .~. + poly(log(CH),2) + poly(log(TDens),2))
-inv2e <- update(inv1, .~. + log(CH)*Week + log(TDens)*Week)
-AICctab(inv1, inv2a, inv2b, inv2c, inv2d, inv2e)
+a <- update(inv1, .~. + log(CH) + log(TDens))
+b <- update(inv1, .~. + poly(log(CH),2) + log(TDens))
+c <- update(inv1, .~. + log(CH) + poly(log(TDens),2))
+d <- update(inv1, .~. + poly(log(CH),2) + poly(log(TDens),2))
+e <- update(inv1, .~. + log(CH)*Week + log(TDens)*Week)
+AICctab(inv1, a, b, c, d, e)
 # although still ns, the interaction with Week has the closest AIC to inv1
-inv2f <- update(inv1, .~. + poly(log(CH),2)*Week + poly(log(TDens),2)*Week)
-AICctab(inv1, inv2a, inv2b, inv2c, inv2d, inv2e, inv2f)
+f <- update(inv1, .~. + poly(log(CH),2)*Week + poly(log(TDens),2)*Week)
+AICctab(inv1, a, b, c, d, e, f)
 
-inv2g <- update(inv1, .~. + log(CH)*Week + log(TDens))
-inv2h <- update(inv1, .~. + log(CH) + log(TDens)*Week)
-AICctab(inv1, inv2a, inv2b, inv2c, inv2d, inv2e, inv2f, inv2g, inv2h)
-inv2i <- update(inv1, .~. + log(CH)*Week + poly(log(TDens),2))
-inv2j <- update(inv1, .~. + log(CH) + poly(log(TDens),2)*Week)
-AICctab(inv1, inv2a, inv2c, inv2e, inv2h, inv2i, inv2j)
-inv2k <- update(inv1, .~. + log(TDens)*Week)
-inv2l <- update(inv1, .~. + log(TDens))
-inv2m <- update(inv1, .~. + log(CH)*Week)
-inv2n <- update(inv1, .~. + log(CH))
-AICctab(inv1, inv2l, inv2m, inv2n, inv2k)
+g <- update(inv1, .~. + log(CH)*Week + log(TDens))
+h <- update(inv1, .~. + log(CH) + log(TDens)*Week)
+AICctab(inv1, a, b, c, d, e, f, g, h)
+i <- update(inv1, .~. + log(CH)*Week + poly(log(TDens),2))
+j <- update(inv1, .~. + log(CH) + poly(log(TDens),2)*Week)
+AICctab(inv1, a, c, e, h, i, j)
+k <- update(inv1, .~. + log(TDens)*Week)
+l <- update(inv1, .~. + log(TDens))
+m <- update(inv1, .~. + log(CH)*Week)
+n <- update(inv1, .~. + log(CH))
+AICctab(inv1, l, m, n, k)
 # not useful!
 
-inv2o <- update(inv1, .~. + scaleTPD)
-inv2p <- update(inv1, .~. + scaleTPD*Week)
-inv2q <- update(inv1, .~. + poly(scaleTPD,2))
-inv2r <- update(inv1, .~. + poly(scaleTPD,2)*Week)
-AICctab(inv1, inv2p, inv2q, inv2r, inv2o)
-inv2s <- update(inv1, .~. + TPD)
-inv2t <- update(inv1, .~. + poly(TPD,2))
-AICctab(inv1, inv2o, inv2p, inv2q, inv2t)
-inv2u <- update(inv1, .~. + poly(scaleTPD,3))
-inv2v <- update(inv1, .~. + poly(scaleTPD,4))
-AICctab(inv1, inv2o, inv2q, inv2u, inv2v)
+o <- update(inv1, .~. + scaleTPD)
+p <- update(inv1, .~. + scaleTPD*Week)
+q <- update(inv1, .~. + poly(scaleTPD,2))
+r <- update(inv1, .~. + poly(scaleTPD,2)*Week)
+AICctab(inv1, p, q, r, o)
+s <- update(inv1, .~. + TPD)
+t <- update(inv1, .~. + poly(TPD,2))
+AICctab(inv1, o, p, q, t)
+u <- update(inv1, .~. + poly(scaleTPD,3))
+v <- update(inv1, .~. + poly(scaleTPD,4))
+AICctab(inv1, o, q, u, v)
 # only linear main effect of TPD
-rm(list=c("inv2a","inv2b","inv2c","inv2d","inv2e","inv2f","inv2g","inv2h","inv2i",
-          "inv2j","inv2k","inv2l","inv2m","inv2n","inv2o","inv2p","inv2q","inv2r",
-          "inv2s","inv2t","inv2u","inv2v"))
+rm(list=c("a","b","c","d","e","f","g","h","i",
+          "j","k","l","m","n","o","p","q","r",
+          "s","t","u","v"))
 inv2 <- update(inv1, .~. + scaleTPD)
 
 
-inv3a <- update(inv2, .~. - scaleTPD + TDiv)
-inv3b <- update(inv2, .~. + TDiv)
-inv3c <- update(inv2, .~. + poly(TDiv,2))
-inv3d <- update(inv2, .~. + TDiv*Week)
-AICctab(inv2, inv3a, inv3b, inv3c, inv3d)
+a <- update(inv2, .~. - scaleTPD + TDiv)
+b <- update(inv2, .~. + TDiv)
+c <- update(inv2, .~. + poly(TDiv,2))
+d <- update(inv2, .~. + TDiv*Week)
+AICctab(inv2, a, b, c, d)
 # TDiv not important
-inv3e <- update(inv2, .~. + sqrt(UDens))
-inv3f <- update(inv2, .~. + poly(sqrt(UDens),2))
-inv3g <- update(inv2, .~. + sqrt(UDens)*Week)
-inv3h <- update(inv2, .~. + poly(sqrt(UDens),2)*Week)
-AICctab(inv2, inv3e, inv3f, inv3g, inv3h)
+e <- update(inv2, .~. + sqrt(UDens))
+f <- update(inv2, .~. + poly(sqrt(UDens),2))
+g <- update(inv2, .~. + sqrt(UDens)*Week)
+h <- update(inv2, .~. + poly(sqrt(UDens),2)*Week)
+AICctab(inv2, e, f, g, h)
 # UDens not important
-inv3i <- update(inv2, .~. + TR)
-inv3j <- update(inv2, .~. + TR*Week)
-AICctab(inv2, inv3i, inv3j)
-inv3k <- update(inv2, .~. + poly(TR,2))
-AICctab(inv2, inv3i, inv3k)
+i <- update(inv2, .~. + TR)
+j <- update(inv2, .~. + TR*Week)
+AICctab(inv2, i, j)
+k <- update(inv2, .~. + poly(TR,2))
+AICctab(inv2, i, k)
 # interesting how abundance increases with TR but decreases with TPD (and poly ns)
 
-rm(list=c("inv3a","inv3b","inv3c","inv3d","inv3e","inv3f","inv3g","inv3h","inv3i",
-          "inv3j","inv3k"))
+rm(list=c("a","b","c","d","e","f","g","h","i",
+          "j","k"))
 inv3 <- update(inv2, .~. + TR)
 summary(inv3)
 
 
 # finally, testing DOM and comparing with Moss
-inv4a <- update(inv3, .~. + DOM) 
-inv4b <- update(inv3, .~. + DOM*Week)
-inv4c <- update(inv3, .~. + DOM - Moss) 
-inv4d <- update(inv3, .~. + DOM*Week - Moss)
-AICctab(inv3, inv4a, inv4b, inv4c, inv4d) # 4c better only 0.1 dAICc on 1df
-summary(inv4c)
-summary(inv4a)
-inv4e <- update(inv3, .~. + DOM - TR)
-AICctab(inv3, inv4a, inv4c, inv4e)
-inv4f <- update(inv3, .~. + DOM - TR - Moss)
-AICctab(inv3, inv4a, inv4c, inv4e, inv4f)
+a <- update(inv3, .~. + DOM) 
+b <- update(inv3, .~. + DOM*Week)
+c <- update(inv3, .~. + DOM - Moss) 
+d <- update(inv3, .~. + DOM*Week - Moss)
+AICctab(inv3, a, b, c, d) # 4c better only 0.1 dAICc on 1df
+summary(c)
+summary(a)
+e <- update(inv3, .~. + DOM - TR)
+AICctab(inv3, a, c, e)
+f <- update(inv3, .~. + DOM - TR - Moss)
+AICctab(inv3, a, c, e, f)
 # effect of TR prob. caused by STRONG effect of Carex. 
 # All Carex Points have low TR
-rm(list=c("inv4a","inv4b","inv4c","inv4d","inv4e","inv4f"))
+rm(list=c("a","b","c","d","e","f"))
 inv4 <- update(inv3, .~. + DOM - TR - Moss)
 summary(inv4)
 
@@ -448,88 +448,88 @@ plot(omn0NBsim)
 
 
 # adding Week and testing poly
-omn1a <- update(omn0NB, .~. + Week)
-omn1b <- update(omn0NB, .~. + poly(Week,2))
-AICctab(omn0, omn0NB, omn1a, omn1b)
+a <- update(omn0NB, .~. + Week)
+b <- update(omn0NB, .~. + poly(Week,2))
+AICctab(omn0, omn0NB, a, b)
 # linear effect of Week very good
-rm(list=c("omn1a","omn1b"))
+rm(list=c("a","b"))
 omn1 <- update(omn0NB, .~. + Week)
 
 
 # nuisance variables like CoD and Weather
-omn2a <- update(omn1, .~. + CoD)
-omn2b <- update(omn1, .~. + poly(CoD,2))
-omn2c <- update(omn1, .~. + Weather)
-AICctab(omn1, omn2a, omn2b, omn2c)
+a <- update(omn1, .~. + CoD)
+b <- update(omn1, .~. + poly(CoD,2))
+c <- update(omn1, .~. + Weather)
+AICctab(omn1, a, b, c)
 # not significant
 # predictors of interest
-omn2d <- update(omn1, .~. + HabClass)
-omn2e <- update(omn1, .~. + Moss)
-AICctab(omn1, omn2d, omn2e) # habclass sig
-omn2f <- update(omn1, .~. + HabClass + Moss)
-AICctab(omn1, omn2d, omn2e, omn2f) # Moss ns
-omn2g <- update(omn1, .~. + HabClass*Week)
-omn2h <- update(omn1, .~. + Moss*Week)
-AICctab(omn1, omn2d, omn2g, omn2e, omn2h)
+d <- update(omn1, .~. + HabClass)
+e <- update(omn1, .~. + Moss)
+AICctab(omn1, d, e) # habclass sig
+f <- update(omn1, .~. + HabClass + Moss)
+AICctab(omn1, d, e, f) # Moss ns
+g <- update(omn1, .~. + HabClass*Week)
+h <- update(omn1, .~. + Moss*Week)
+AICctab(omn1, d, g, e, h)
 # only main effect of HabClass
-rm(list=c("omn2a","omn2b","omn2c","omn2d","omn2e","omn2f","omn2g","omn2h"))
+rm(list=c("a","b","c","d","e","f","g","h"))
 omn2 <- update(omn1, .~. + HabClass)
 anova(omn1, omn2)
 
 
-omn3a <- update(omn2, .~. + log(CH) + log(TDens))
-omn3b <- update(omn2, .~. + poly(log(CH),2) + log(TDens))
-omn3c <- update(omn2, .~. + log(CH) + poly(log(TDens),2))
-omn3d <- update(omn2, .~. + poly(log(CH),2) + poly(log(TDens),2))
-omn3e <- update(omn2, .~. + log(CH)*Week + log(TDens)*Week)
-AICctab(omn2, omn3a, omn3b, omn3c, omn3d, omn3e)
+a <- update(omn2, .~. + log(CH) + log(TDens))
+b <- update(omn2, .~. + poly(log(CH),2) + log(TDens))
+c <- update(omn2, .~. + log(CH) + poly(log(TDens),2))
+d <- update(omn2, .~. + poly(log(CH),2) + poly(log(TDens),2))
+e <- update(omn2, .~. + log(CH)*Week + log(TDens)*Week)
+AICctab(omn2, a, b, c, d, e)
 # no poly
-omn3f <- update(omn2, .~. + log(CH)*Week + log(TDens))
-omn3g <- update(omn2, .~. + log(CH) + log(TDens)*Week)
-AICctab(omn2, omn3a, omn3b, omn3c, omn3d, omn3e, omn3f, omn3g)
+f <- update(omn2, .~. + log(CH)*Week + log(TDens))
+g <- update(omn2, .~. + log(CH) + log(TDens)*Week)
+AICctab(omn2, a, b, c, d, e, f, g)
 # interaction CH:Week + TD is best
-omn3h <- update(omn2, .~. + log(CH)*Week) 
-omn3i <- update(omn2, .~. + log(CH))
-AICctab(omn2, omn3a, omn3f, omn3h, omn3i)
+h <- update(omn2, .~. + log(CH)*Week) 
+i <- update(omn2, .~. + log(CH))
+AICctab(omn2, a, f, h, i)
 
-rm(list=c("omn3a","omn3b","omn3c","omn3d","omn3e","omn3f","omn3g","omn3h","omn3i"))
+rm(list=c("a","b","c","d","e","f","g","h","i"))
 omn3 <- update(omn2, .~. + log(CH)*Week + log(TDens))
 
 
-omn4a <- update(omn3, .~. + scaleTPD - log(TDens))
-omn4b <- update(omn3, .~. + scaleTPD) 
-AICctab(omn3, omn4a, omn4b) # keep
-omn4c <- update(omn3, .~. + scaleTPD*Week)
-omn4d <- update(omn3, .~. + poly(scaleTPD,2))
-omn4e <- update(omn3, .~. + poly(scaleTPD,2)*Week)
-AICctab(omn3, omn4a, omn4b, omn4c, omn4d)
+a <- update(omn3, .~. + scaleTPD - log(TDens))
+b <- update(omn3, .~. + scaleTPD) 
+AICctab(omn3, a, b) # keep
+c <- update(omn3, .~. + scaleTPD*Week)
+d <- update(omn3, .~. + poly(scaleTPD,2))
+e <- update(omn3, .~. + poly(scaleTPD,2)*Week)
+AICctab(omn3, a, b, c, d)
 # not significant
-omn4f <- update(omn3, .~. + TDiv)
-omn4g <- update(omn3, .~. + poly(TDiv,2))
-omn4h <- update(omn3, .~. + TDiv*Week)
-omn4i <- update(omn3, .~. + poly(TDiv,2)*Week)
-AICctab(omn3, omn4f, omn4g, omn4h, omn4i)
+f <- update(omn3, .~. + TDiv)
+g <- update(omn3, .~. + poly(TDiv,2))
+h <- update(omn3, .~. + TDiv*Week)
+i <- update(omn3, .~. + poly(TDiv,2)*Week)
+AICctab(omn3, f, g, h, i)
 # not significant
-omn4j <- update(omn3, .~. + scaleUDens)
-omn4k <- update(omn3, .~. + poly(scaleUDens,2))
-omn4l <- update(omn3, .~. + scaleUDens*Week)
-omn4m <- update(omn3, .~. + poly(scaleUDens,2)*Week)
-AICctab(omn3, omn4j, omn4k, omn4l, omn4m)
+j <- update(omn3, .~. + scaleUDens)
+k <- update(omn3, .~. + poly(scaleUDens,2))
+l <- update(omn3, .~. + scaleUDens*Week)
+m <- update(omn3, .~. + poly(scaleUDens,2)*Week)
+AICctab(omn3, j, k, l, m)
 # not significant
-omn4n <- update(omn3, .~. + TR)
-omn4o <- update(omn3, .~. + TR*Week)
-omn4p <- update(omn3, .~. + poly(TR,2))
-omn4q <- update(omn3, .~. + poly(TR,2)*Week)
-AICctab(omn3, omn4n, omn4o, omn4p, omn4q)
+n <- update(omn3, .~. + TR)
+o <- update(omn3, .~. + TR*Week)
+p <- update(omn3, .~. + poly(TR,2))
+q <- update(omn3, .~. + poly(TR,2)*Week)
+AICctab(omn3, n, o, p, q)
 # not significant
-omn4r <- update(omn3, .~. + DOM) 
-omn4s <- update(omn3, .~. + DOM*Week)
-omn4t <- update(omn3, .~. + DOM - HabClass)
-AICctab(omn3, omn4r, omn4s, omn4t)
+r <- update(omn3, .~. + DOM) 
+s <- update(omn3, .~. + DOM*Week)
+t <- update(omn3, .~. + DOM - HabClass)
+AICctab(omn3, r, s, t)
 # DOM has 3.4 dAICc but 4 df ##
-rm(list=c("omn4a","omn4b","omn4c","omn4d","omn4e","omn4f","omn4g","omn4h","omn4i",
-          "omn4j","omn4k","omn4l","omn4m","omn4n","omn4o","omn4p","omn4q","omn4r",
-          "omn4s","omn4t"))
+rm(list=c("a","b","c","d","e","f","g","h","i",
+          "j","k","l","m","n","o","p","q","r",
+          "s","t"))
 # no selection. stick with omn3
 
 summary(omn3)
