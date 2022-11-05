@@ -224,9 +224,11 @@ summary(b)
 
 ### Guilds: invertebrate-feeding ####
 
+m_guild_inv <- m_guild %>% filter(GuildFeed == "Invertebrate")
+
 # invertebrate has 22.6% zeroes (94/416); omnivore 7.9%
 
-plot(m_data_A1_inv$GuildAbun ~ m_data_A1_inv$Week)
+plot(m_guild_inv$GuildAbun ~ m_guild_inv$Week)
 
 # all the previous models I tried and got to dead ends with (in CodeBin):
 # rm(list=c("inv0min","inv1min","inv2min","inv3min","inv3minsim",
@@ -242,7 +244,7 @@ plot(m_data_A1_inv$GuildAbun ~ m_data_A1_inv$Week)
 
 
 inv0 <- glmmTMB(GuildAbun ~ Observer + (1|Point),
-                 data = m_data_A1_inv, family=poisson())
+                 data = m_guild_inv, family=poisson())
 summary(inv0)
 inv0sim <- simulateResiduals(inv0)
 plot(inv0sim)
@@ -383,7 +385,7 @@ testZeroInflation(inv4sim)
 
 ### Guilds: omnivore-feeding ####
 
-plot(m_data_A1_omn$GuildAbun ~ m_data_A1_omn$Week)
+plot(m_guild_omn$GuildAbun ~ m_guild_omn$Week)
 # omni seem to show much clearer pattern (increase). migrants
 
 # all the previous models I tried and got to dead ends with (in CodeBin):
@@ -391,11 +393,11 @@ plot(m_data_A1_omn$GuildAbun ~ m_data_A1_omn$Week)
 
 
 
-omn0 <- glmmTMB(GuildAbun ~ Observer + (1|Point), data=m_data_A1_omn, family=poisson)
+omn0 <- glmmTMB(GuildAbun ~ Observer + (1|Point), data=m_guild_omn, family=poisson)
 omn0sim <- simulateResiduals(omn0)
 plot(omn0sim)
 # KS test, dispersion test, outlier test all sig
-omn0NB <- glmmTMB(GuildAbun ~ Observer + (1|Point), data=m_data_A1_omn, family = nbinom2)
+omn0NB <- glmmTMB(GuildAbun ~ Observer + (1|Point), data=m_guild_omn, family = nbinom2)
 omn0NBsim <- simulateResiduals(omn0NB)
 plot(omn0NBsim)
 
