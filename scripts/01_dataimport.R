@@ -53,7 +53,7 @@ birds2 <- birds1 %>%
   group_by(Point, Week, Date, Observer, CoD, Weather, Wind, Visibility, Spec_code) %>% 
   summarise(GuildFeed = GuildFeed,
             Migration75 = Migration75,
-            Spec_Abun = sum(Number)) %>%
+            Spec_Point_Abun = sum(Number)) %>%
   ungroup() %>% 
   # Days and Period
   mutate(Days = (Date - as_date("2020-07-07")) %>% as.numeric(), # start of sampling
@@ -64,11 +64,15 @@ birds2 <- birds1 %>%
   # calculating relative abundance for species in each point count compared to that species
   # in all points that week
   group_by(Week, Spec_code) %>% 
-  mutate(Spec_RelAbun = round(Spec_Abun / sum(Spec_Abun), 4),
+  mutate(Spec_Week_TotAbun = sum(Spec_Point_Abun),
          # mean across points that species present in (<= 32)
-         Spec_HabSel = round(Spec_Abun / mean(Spec_Abun), 4), 
+         Spec_Week_MeanAbun = mean(Spec_Point_Abun),
          # mean across all points
-         Spec_HabSel2 = round(Spec_Abun / (sum(Spec_Abun) / 32), 4)) 
+         Spec_Week_MeanAbun2 = (sum(Spec_Point_Abun) / 32)) %>% 
+  ungroup() %>% 
+  mutate(Spec_RelAbun = round(Spec_Point_Abun / Spec_Week_TotAbun, 4),
+         Spec_HabSel = round(Spec_Point_Abun / Spec_Week_MeanAbun, 4), 
+         Spec_HabSel2 = round(Spec_Point_Abun / Spec_Week_MeanAbun2, 4)) 
 
 # HabSel2 makes more sense because it considers Points with 0 abundance, but it works
 # only for the levels of All Birds and Guilds. For individual species, it might work
@@ -82,32 +86,44 @@ birds2 <- birds1 %>%
 
 # all species
 birds_all <- birds2 %>% 
-  group_by(Period, Week, Days, Observer, Point, CoD, Weather) %>% 
-  summarise(All_Abun = sum(Spec_Abun)) %>% 
+  group_by(Period, Point, Week, Days, Observer, CoD, Weather) %>% 
+  summarise(Point_Abun = sum(Spec_Point_Abun)) %>% 
   group_by(Week) %>% 
-  mutate(All_RelAbun = round(All_Abun / sum(All_Abun), 4),
-         All_HabSel = round(All_Abun / mean(All_Abun), 4), 
-         All_HabSel2 = round(All_Abun / (sum(All_Abun) / 32), 4)) %>% 
+  mutate(Week_TotAbun = sum(Point_Abun),
+         Week_MeanAbun = mean(Point_Abun),
+         Week_MeanAbun2 = (sum(Point_Abun) / 32)) %>% 
+  ungroup() %>% 
+  mutate(RelAbun = round(Point_Abun / Week_TotAbun, 4),
+         HabSel = round(Point_Abun / Week_MeanAbun, 4), 
+         HabSel2 = round(Point_Abun / Week_MeanAbun2, 4)) %>% 
   ungroup()
 
 # individual guilds
 birds_guild <- birds2 %>% 
-  group_by(Period, Week, Days, Observer, Point, CoD, Weather, GuildFeed) %>% 
-  summarise(Guild_Abun = sum(Spec_Abun)) %>%
+  group_by(Period, Point, Week, Days, Observer, CoD, Weather, GuildFeed) %>% 
+  summarise(Point_Abun = sum(Spec_Point_Abun)) %>% 
   group_by(Week) %>% 
-  mutate(Guild_RelAbun = round(Guild_Abun / sum(Guild_Abun), 4),
-         Guild_HabSel = round(Guild_Abun / mean(Guild_Abun), 4), 
-         Guild_HabSel2 = round(Guild_Abun / (sum(Guild_Abun) / 32), 4)) %>% 
+  mutate(Week_TotAbun = sum(Point_Abun),
+         Week_MeanAbun = mean(Point_Abun),
+         Week_MeanAbun2 = (sum(Point_Abun) / 32)) %>% 
+  ungroup() %>% 
+  mutate(RelAbun = round(Point_Abun / Week_TotAbun, 4),
+         HabSel = round(Point_Abun / Week_MeanAbun, 4), 
+         HabSel2 = round(Point_Abun / Week_MeanAbun2, 4)) %>% 
   ungroup()
 
 # migrants and non-migrants
 birds_mig <- birds2 %>% 
-  group_by(Period, Week, Days, Observer, Point, CoD, Weather, Migration75) %>% 
-  summarise(Migr_Abun = sum(Spec_Abun)) %>%
+  group_by(Period, Point, Week, Days, Observer, CoD, Weather, Migration75) %>% 
+  summarise(Point_Abun = sum(Spec_Point_Abun)) %>% 
   group_by(Week) %>% 
-  mutate(Migr_RelAbun = round(Migr_Abun / sum(Migr_Abun), 4),
-         Migr_HabSel = round(Migr_Abun / mean(Migr_Abun), 4), 
-         Migr_HabSel2 = round(Migr_Abun / (sum(Migr_Abun) / 32), 4)) %>% 
+  mutate(Week_TotAbun = sum(Point_Abun),
+         Week_MeanAbun = mean(Point_Abun),
+         Week_MeanAbun2 = (sum(Point_Abun) / 32)) %>% 
+  ungroup() %>% 
+  mutate(RelAbun = round(Point_Abun / Week_TotAbun, 4),
+         HabSel = round(Point_Abun / Week_MeanAbun, 4), 
+         HabSel2 = round(Point_Abun / Week_MeanAbun2, 4)) %>% 
   ungroup()
 
 
@@ -116,7 +132,7 @@ birds_mig <- birds2 %>%
 birds_summary <- birds2 %>%
   group_by(Spec_code, Week) %>% 
   summarise(Tot_Points = n_distinct(Point),
-            Tot_Det = sum(Spec_Abun)) %>% 
+            Tot_Det = sum(Spec_Point_Abun)) %>% 
   ungroup()
 
 

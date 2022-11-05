@@ -73,13 +73,13 @@ cor.test(habvar$UndRich, habvar$CCavgsd, method="pearson")
 
 ### Analysis 1: Building models for all birds ####
 
-boxplot(m_all$All_Abun ~ m_all$Period)
-plot(m_all$All_Abun ~ m_all$Days)
+boxplot(m_all$Point_Abun ~ m_all$Period)
+plot(m_all$Point_Abun ~ m_all$Days)
 
 
-all.0 <- glmer(All_Abun ~ Observer + (1|Point) + (1|Days),
+all.0 <- glmer(Point_Abun ~ Observer + (1|Point) + (1|Days),
                data = m_all, family = poisson())
-anova(all.0)
+summary(all.0)
 
 
 # adding Week and testing for polynomial 
@@ -103,7 +103,7 @@ AICctab(all.1, all.2a, all.2b)
 # both significant, poly more
 all.2c <- update(all.2b, . ~ . + Weather)
 AICctab(all.1, all.2b, all.2c) 
-# Weather not significant
+# Weather significant
 
 # finally moving to predictors of interest
 all.2d <- update(all.1, .~. + HabClass)
@@ -120,10 +120,12 @@ anova(all.1, all.2e) # Moss ns too
 all.2f <- update(all.1, .~. + CCavgscaled)
 all.2g <- update(all.1, .~. + log(CCavgsd) + log(TreeDens))
 AICctab(all.1, all.2f, all.2g) # as expected, sd+TreeDens better than simple CC
-summary(all.2g) # dAIC 2.5 so add
+summary(all.2g) 
+# dAIC 2.5 so add
 all.2h <- update(all.2g, .~. + log(CCavgsd):log(TreeDens))
-summary(all.2h) # drop interaction 
-drop1(all.2g) # but keep main effects
+summary(all.2h) 
+# drop interaction 
+drop1(all.2g) # drop main effect of het.
 all.2i <- update(all.1, .~. + poly(log(CCavgsd),2) + poly(log(TreeDens),2))
 all.2j <- update(all.1, .~. + poly(log(CCavgsd),2) + log(TreeDens))
 all.2k <- update(all.1, .~. + log(CCavgsd) + poly(log(TreeDens),2))
@@ -251,7 +253,7 @@ summary(all.6)
 ## Matching fruiting phenology to abundance ##
 
 
-allfruit.0 <- glmmTMB(All_Abun ~ Observer + (1|Point) + (1|Days),
+allfruit.0 <- glmmTMB(Point_Abun ~ Observer + (1|Point) + (1|Days),
                       data=mdata_fr, family=poisson)
 summary(allfruit.0)
 
