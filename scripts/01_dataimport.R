@@ -47,7 +47,7 @@ birds2 <- birds1 %>%
   # Count of Day
   group_by(Week, Date, Observer) %>% 
   arrange(StartTime, by_group = T) %>%
-  mutate(CoD = as.integer(factor(StartTime))) %>% 
+  mutate(CoD = as.numeric(factor(StartTime))) %>% 
   # summarising per species to get total count instead of multiple presence rows
   arrange(Week, Date, Observer) %>% 
   group_by(Point, Week, Date, Observer, CoD, Weather, Wind, Visibility, Spec_code) %>% 
