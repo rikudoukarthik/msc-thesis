@@ -50,10 +50,9 @@ birds2 <- birds1 %>%
   mutate(CoD = as.numeric(factor(StartTime))) %>% 
   # summarising per species to get total count instead of multiple presence rows
   arrange(Week, Date, Observer) %>% 
-  group_by(Point, Week, Date, Observer, CoD, Weather, Wind, Visibility, Spec_code) %>% 
-  summarise(GuildFeed = GuildFeed,
-            Migration75 = Migration75,
-            Spec_Point_Abun = sum(Number)) %>%
+  group_by(Point, Week, Date, Observer, CoD, Weather, Wind, Visibility, 
+           Spec_code, GuildFeed, Migration75) %>% 
+  summarise(Spec_Point_Abun = sum(Number)) %>%
   ungroup() %>% 
   # Days and Period
   mutate(Days = (Date - as_date("2020-07-07")) %>% as.numeric(), # start of sampling
