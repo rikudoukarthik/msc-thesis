@@ -1,29 +1,21 @@
-### Analysis of thesis data for manuscript 
-### 
+### Analysis of thesis data for manuscript ### 
+
 ### Bird abundances versus habitat variables; 
 ### post-breeding habitat breadth and selectivity of birds
-
 
 library(tidyverse)
 library(lme4)
 library(bbmle)
 library(DHARMa)
-# library(emmeans)
-# library(effects)
 library(glmmTMB)
 library(vegan)
-
-
+# devtools::install_github("ProcessMiner/nlcor")
+library(nlcor)
 
 load("data/01_dataimport.RData")
 
-
 ##### Checking for correlation between habitat variables ############
 
-
-# Strong correlation at high CCavg is a direct physical result because with higher
-# density of trees, there are less gaps overall and hence the variability in
-# cover is also lower.
 cor.test(habvar$CCavg, habvar$TreeDens, method = "pearson")
 cor.test(habvar$CCavgsd, habvar$CCavg, method = "pearson")
 cor.test(habvar$CCavgsd, habvar$TreeDens, method = "pearson")
@@ -31,41 +23,51 @@ cor.test(habvar$CCavgsd, habvar$TreeDens, method = "pearson")
 plot(habvar$CCavg, habvar$TreeDens)
 plot(habvar$CCavgsd, habvar$CCavg)
 plot(habvar$CCavgsd, habvar$TreeDens)
+
+# Strong correlation of CCavg and CCavgsd at high CCavg is a direct physical result 
+# because with higher density of trees, there are less gaps overall and hence the 
+# variability/heterogeneity in cover is also lower.
+
 # CCavgsd does not correlate with TreeDens. 
+
 # Hence, I can either include just CCavg in the models, which captures partly the 
 # essences of CCavgsd and TreeDens, or I can include the latter two in the models 
 # and exclude CCavg where the two variables would then capture a broader scope
 # of variability than would have been possible with CCavg alone, but might miss
 # some of the core essence of CCavg
 
-cor.test(habvar$TreePropDeci, habvar$TreeDiv, method="spearman")
-plot(habvar$TreePropDeci, habvar$TreeDiv)
-# # devtools::install_github("ProcessMiner/nlcor")
-# library(nlcor)
-# nlcor(habvar$TreePropDeci, habvar$TreeDiv, plt=T)
+cor.test(habvar$TPD, habvar$TreeDiv, method = "spearman")
+plot(habvar$TPD, habvar$TreeDiv)
+# should test non-linear correlation
+
+nlcor(habvar$TPD, habvar$TreeDiv, plt = T)
+# from the plot, it is clear that there is a hump-shaped correlation, but the function
+# is unable to pick it up, probably due to the low sample size (it was working during thesis)
+
 # I think it was Salek 2016 who said proportion of deciduous trees was a better
-# predictor than tree diversity, and since the (non-linear) correlation is very 
-# strong here, I think it is better to include TreePropDeci and exclude TreeDiv.
+# predictor than tree diversity, and since the (non-linear) correlation is very
+# strong here, I think it is better to include TPD and exclude TreeDiv.
 
 # Using CCavgsd+TreeDens over using CCavg is not statistically significantly better
 # but has 1.79 less residual deviance and only uses one extra df, so it might be
 # the way to go.
-# Using TreeDiv over TreePropDeci has, technically, lower resid. dev. and lower
+# Using TreeDiv over TPD has, technically, lower resid. dev. and lower
 # Cp, but the difference is negligible (0.25).
 
 
-cor.test(habvar$TreePropDeci, habvar$TreeDens, method="pearson")
-plot(habvar$TreePropDeci, habvar$TreeDens) # correlated
-cor.test(habvar$TreePropDeci, habvar$CCavg, method="pearson")
+cor.test(habvar$TPD, habvar$TreeDens, method="pearson")
+plot(habvar$TPD, habvar$TreeDens) # correlated
 
+cor.test(habvar$UndDiv, habvar$TreeDens, method="pearson") # close to sig.
+plot(habvar$UndDiv, habvar$TreeDens) 
+
+# not significant
+cor.test(habvar$TPD, habvar$CCavg, method="pearson")
 cor.test(habvar$UndDens, habvar$TreeDens, method="pearson")
-cor.test(habvar$UndDiv, habvar$TreeDens, method="pearson")
 cor.test(habvar$UndRich, habvar$TreeDens, method="pearson")
 cor.test(habvar$UndDens, habvar$CCavgsd, method="pearson")
 cor.test(habvar$UndDiv, habvar$CCavgsd, method="pearson")
 cor.test(habvar$UndRich, habvar$CCavgsd, method="pearson")
-
-
 
 ### ###
 
@@ -76,16 +78,17 @@ plot(m_all$All_Abun ~ m_all$Days)
 
 
 all.0 <- glmer(All_Abun ~ Observer + (1|Point) + (1|Days),
-               data = mdata, family=poisson())
+               data = m_all, family = poisson())
 anova(all.0)
 
 
 # adding Week and testing for polynomial 
-all.1a <- update(all.0, .~. + Week)
-all.1b <- update(all.0, .~. + poly(Week,2))
-all.1c <- update(all.0, .~. + poly(Week,3))
-anova(all.1a, all.1c) # 2nd and 3rd not better than linear
-AICctab(all.1a, all.1b, all.1c)
+all.1a <- update(all.0, . ~ . + Week)
+all.1b <- update(all.0, . ~ . + poly(Week, 2))
+all.1c <- update(all.0, . ~ . + poly(Week, 3))
+anova(all.1a, all.1b) 
+AICctab(all.1a, all.1b, all.1c) # returns best model on top and delta calculated from that
+# 2nd and 3rd not better than linear
 rm(list = c("all.1a", "all.1b", "all.1c"))
 
 all.1 <- update(all.0, .~. + Week)
@@ -93,12 +96,14 @@ summary(all.1)
 
 
 # testing nuisance variables like time of count during day 
-all.2a <- update(all.1, .~. + CoD)
-all.2b <- update(all.1, .~. + poly(CoD,2))
-anova(all.1, all.2a) # neither linear nor poly significant (AIC and chi-sq both)
-all.2c <- update(all.1, .~. + Weather)
-summary(all.2c)
-anova(all.1, all.2c) # Weather not significant
+all.2a <- update(all.1, . ~ . + CoD)
+all.2b <- update(all.1, . ~ . + poly(CoD, 2))
+anova(all.1, all.2a) 
+AICctab(all.1, all.2a, all.2b)
+# both significant, poly more
+all.2c <- update(all.2b, . ~ . + Weather)
+AICctab(all.1, all.2b, all.2c) 
+# Weather not significant
 
 # finally moving to predictors of interest
 all.2d <- update(all.1, .~. + HabClass)
@@ -144,7 +149,7 @@ all.3 <- update(all.2, .~. + Week:(log(CCavgsd)+log(TreeDens)))
 summary(all.3)
 
 
-# testing TreePropDeci and perhaps dropping others for this
+# testing TPD and perhaps dropping others for this
 all.4a <- update(all.3, .~. + TPDscaled)
 all.4b <- update(all.3, .~. + poly(TPDscaled,2))
 anova(all.4a, all.4b) # poly not preferred
@@ -154,7 +159,7 @@ all.4d <- update(all.1, .~. + TPDscaled + Week:TPDscaled) # replacing other pred
 all.4e <- update(all.1, .~. + poly(TPDscaled,2))
 AICctab(all.1, all.2, all.3, all.4a, all.4c, all.4d, all.4e)
 anova(all.1, all.3)
-# TreePropDeci not useful
+# TPD not useful
 # trying TreeDiv
 all.4f <- update(all.3, .~. + TreeDiv) # failed to converge 0.0112 (tot 0.002)
 all.4g <- update(all.3, .~. + poly(TreeDiv,2)) # failed to converge 0.0248 (tot 0.002)
@@ -355,8 +360,8 @@ inv.2p <- update(inv.1, .~. + TPDscaled*Week)
 inv.2q <- update(inv.1, .~. + poly(TPDscaled,2))
 inv.2r <- update(inv.1, .~. + poly(TPDscaled,2)*Week)
 AICctab(inv.1, inv.2p, inv.2q, inv.2r, inv.2o)
-inv.2s <- update(inv.1, .~. + TreePropDeci)
-inv.2t <- update(inv.1, .~. + poly(TreePropDeci,2))
+inv.2s <- update(inv.1, .~. + TPD)
+inv.2t <- update(inv.1, .~. + poly(TPD,2))
 AICctab(inv.1, inv.2o, inv.2p, inv.2q, inv.2t)
 inv.2u <- update(inv.1, .~. + poly(TPDscaled,3))
 inv.2v <- update(inv.1, .~. + poly(TPDscaled,4))
@@ -631,8 +636,8 @@ NM.4p <- update(NM.3, .~. + TPDscaled*Week)
 NM.4q <- update(NM.3, .~. + poly(TPDscaled,2))
 NM.4r <- update(NM.3, .~. + poly(TPDscaled,2)*Week)
 AICctab(NM.3, NM.4p, NM.4q, NM.4r, NM.4o)
-NM.4s <- update(NM.3, .~. + TreePropDeci)
-NM.4t <- update(NM.3, .~. + poly(TreePropDeci,2))
+NM.4s <- update(NM.3, .~. + TPD)
+NM.4t <- update(NM.3, .~. + poly(TPD,2))
 AICctab(NM.3, NM.4o, NM.4p, NM.4q, NM.4t)
 NM.4u <- update(NM.3, .~. + poly(TPDscaled,3))
 NM.4v <- update(NM.3, .~. + poly(TPDscaled,4))
@@ -767,8 +772,8 @@ PM.4p <- update(PM.3, .~. + TPDscaled*Week)
 PM.4q <- update(PM.3, .~. + poly(TPDscaled,2))
 PM.4r <- update(PM.3, .~. + poly(TPDscaled,2)*Week)
 AICctab(PM.3, PM.4p, PM.4q, PM.4r, PM.4o)
-PM.4s <- update(PM.3, .~. + TreePropDeci)
-PM.4t <- update(PM.3, .~. + poly(TreePropDeci,2))
+PM.4s <- update(PM.3, .~. + TPD)
+PM.4t <- update(PM.3, .~. + poly(TPD,2))
 AICctab(PM.3, PM.4o, PM.4p, PM.4q, PM.4t)
 PM.4u <- update(PM.3, .~. + poly(TPDscaled,3))
 PM.4v <- update(PM.3, .~. + poly(TPDscaled,4))
@@ -898,8 +903,8 @@ CM.4p <- update(CM.3, .~. + TPDscaled*Week)
 CM.4q <- update(CM.3, .~. + poly(TPDscaled,2))
 CM.4r <- update(CM.3, .~. + poly(TPDscaled,2)*Week)
 AICctab(CM.3, CM.4p, CM.4q, CM.4r, CM.4o)
-CM.4s <- update(CM.3, .~. + TreePropDeci)
-CM.4t <- update(CM.3, .~. + poly(TreePropDeci,2))
+CM.4s <- update(CM.3, .~. + TPD)
+CM.4t <- update(CM.3, .~. + poly(TPD,2))
 AICctab(CM.3, CM.4o, CM.4p, CM.4q, CM.4t)
 CM.4u <- update(CM.3, .~. + poly(TPDscaled,3))
 CM.4v <- update(CM.3, .~. + poly(TPDscaled,4))
