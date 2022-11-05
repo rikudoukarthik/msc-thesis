@@ -161,10 +161,10 @@ habvar <- readxl::read_xlsx("data/data_HabVar_2021Feb26.xlsx", "Point Descriptio
   # scaling/transforming variables where necessary
   mutate(scaleCC = as.vector(scale(CC)),
          scaleCH = as.vector(scale(CH)),
-         scaleTD = as.vector(scale(TDens)),
          scaleTPD = as.vector(scale(TPD)),
          scaleUDens = as.vector(scale(UDens)),
-         logCH = log(CH))
+         logCH = log(CH),
+         logTDens = log(TDens))
 
 
 

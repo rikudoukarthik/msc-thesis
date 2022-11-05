@@ -78,8 +78,20 @@ plot(m_all$Point_Abun ~ m_all$Days)
 
 
 all0 <- glmer(Point_Abun ~ Observer + (1|Point) + (1|Days),
-               data = m_all, family = poisson())
+              data = m_all, family = poisson(), 
+              control = glmerControl(optimizer = "bobyqa"))
 summary(all0)
+
+
+# # choose optimiser to avoid convergence issue:
+# 
+# # install.packages("optimx")
+# # install.packages("dfoptim")
+# opt <- allFit(model_not_converging)
+# summary(opt)$which.OK # only 1/7 optimisers failed
+# summary(opt)$llik # all pretty similar values so I think bobyqa good choice
+# summary(opt)$fixef
+# # use bobyqa
 
 
 # adding Week and testing for polynomial 
@@ -87,11 +99,10 @@ a <- update(all0, . ~ . + Week)
 b <- update(all0, . ~ . + poly(Week, 2))
 c <- update(all0, . ~ . + poly(Week, 3))
 anova(a, b) 
-AICctab(a, b, c) # returns best model on top and delta calculated from that
+AICctab(all0, a, b, c) # returns best model on top and delta calculated from that
 # 2nd and 3rd not better than linear
-rm(list = c("a", "b", "c"))
 
-all1 <- update(all0, .~. + Week)
+all1 <- a
 summary(all1)
 
 
@@ -101,171 +112,113 @@ b <- update(all1, . ~ . + poly(CoD, 2))
 anova(all1, a) 
 AICctab(all1, a, b)
 # neither linear nor poly significant
-c <- update(b, . ~ . + Weather)
-AICctab(all1, b, c) 
+c <- update(all1, . ~ . + Weather)
+AICctab(all1, a, b, c) 
 # Weather not significant
 
+
 # finally moving to predictors of interest
-d <- update(all1, .~. + HabClass)
-e <- update(all1, .~. + Moss)
-AICctab(all1, d, e)
-anova(all1, d)
-summary(d)
+a <- update(all1, .~. + HabClass)
+b <- update(all1, .~. + Moss)
+AICctab(all1, a, b) # Moss ns
+anova(all1, a)
+summary(a)
 # summary function shows that Interior is marginally significant (0.04) but other levels
 # are not. AIC is not different at all So will have to ignore.
 # summary() p value cannot be relied on.
-summary(e)
-anova(all1, e) # Moss ns too
 
-f <- update(all1, .~. + scaleCC)
-g <- update(all1, .~. + log(CH) + log(TDens))
-AICctab(all1, f, g) # as expected, sd+TDens better than simple CC
-summary(g) 
-# dAIC 2.5 so add
-h <- update(g, .~. + log(CH):log(TDens))
-summary(h) 
-# drop interaction 
-drop1(g) # drop main effect of het.
-i <- update(all1, .~. + poly(log(CH),2) + poly(log(TDens),2))
-j <- update(all1, .~. + poly(log(CH),2) + log(TDens))
-k <- update(all1, .~. + log(CH) + poly(log(TDens),2))
-AICctab(g, i, j, k)
-# two poly is worst. poly of TDens is technically better than poly of CH
-# but both worse than simple linear
+c <- update(all1, .~. + scaleCC)
+d <- update(all1, .~. + logCH) # log better logically and statistically than scale
+e <- update(all1, .~. + logTDens)
+f <- update(all1, .~. + scaleTPD)
+g <- update(all1, .~. + TPD)
+h <- update(all1, .~. + TDiv)
+i <- update(all1, .~. + scaleUDens)
+j <- update(all1, .~. + UDens)
+k <- update(all1, .~. + DOM)
+AICctab(all1, c, d, e, f, g, h, i, j, k) 
+# most variables not signficant, but testing poly before discarding
+f <- update(all1, .~. + poly(scaleTPD, 2))
+g <- update(all1, .~. + poly(TPD, 2))
+h <- update(all1, .~. + poly(TDiv, 2))
+i <- update(all1, .~. + poly(scaleUDens, 2))
+j <- update(all1, .~. + poly(UDens, 2))
+AICctab(all1, c, d, e, f, g, h, i, j, k) 
+# poly is ever worse for those variables
 
-rm(list=c("a","b","c","d","e","f",
-          "g","h","i","j","k"))
-all2 <- update(all1, .~. + log(CH) + log(TDens))
-summary(all2)
+# now, moving to variables which have an effect:
+all2 <- k
+# DOM clearly important, so trying other variables in addition to DOM
+a <- update(all1, .~. + scaleCC)
+b <- update(all1, .~. + logCH) # log better logically and statistically than scale
+c <- update(all1, .~. + logTDens)
 
+d <- update(all2, .~. + scaleCC)
+e <- update(all2, .~. + logCH)
+f <- update(all2, .~. + logTDens)
+AICctab(all1, all2, a, b, c, d, e, f) 
+# as expected, CH & TDens better than simple CC so dropping CC (models a and d)
+# model with only TDens (c) does not pass dAICc threshold so drop
+# contest between models b, e and f---both e and f with DOM are better so drop b
 
-# interaction of predictors with Week (of pertinence to question)
-a <- update(all2, .~. + Week:log(CH))
-b <- update(all2, .~. + Week:log(TDens))
-c <- update(all2, .~. + Week:(log(CH)+log(TDens)))
-AICctab(all2, a, b, c) 
-# TDens seems more important in general (3b over 3a) but both recommended by AIC
+a <- update(all2, .~. + logCH)
+b <- update(all2, .~. + logTDens)
+c <- update(all2, .~. + logCH + logTDens)
+d <- update(all2, .~. + logCH + logTDens + logCH:logTDens)
+AICctab(all2, a, b, c, d) 
+# both together (or with interaction) does not improve model (delta = 0.3 for 1 df) 
+# among a and b, TDens better than CH, so retain only CH
 
-rm(list=c("a", "b", "c"))
-all3 <- update(all2, .~. + Week:(log(CH)+log(TDens)))
+# but trying poly before making decision
+e <- update(a, .~. + poly(logCH, 2))
+f <- update(a, .~. + poly(logTDens, 2))
+AICctab(all2, a, b, e, f)
+# poly very poor, both linear better than both poly
+
+all3 <- b
 summary(all3)
 
 
-# testing TPD and perhaps dropping others for this
-a <- update(all3, .~. + scaleTPD)
-b <- update(all3, .~. + poly(scaleTPD,2))
-anova(a, b) # poly not preferred
-drop1(a)
-c <- update(all3, .~. + scaleTPD + Week:scaleTPD)
-d <- update(all1, .~. + scaleTPD + Week:scaleTPD) # replacing other pred.
-e <- update(all1, .~. + poly(scaleTPD,2))
-AICctab(all1, all2, all3, a, c, d, e)
-anova(all1, all3)
-# TPD not useful
-# trying TDiv
-f <- update(all3, .~. + TDiv) # failed to converge 0.0112 (tot 0.002)
-g <- update(all3, .~. + poly(TDiv,2)) # failed to converge 0.0248 (tot 0.002)
-AICctab(all3, f, g)
-# TDiv not useful
+# interaction of predictors with Week (of pertinence to question)
+a <- update(all3, .~. + Week:DOM)
+b <- update(all3, .~. + Week:logTDens)
+c <- update(all3, .~. + Week:(DOM + logTDens))
+AICctab(all3, a, b, c) 
+# interaction with both is poor, so drop c
+drop1(c)
+# dropping interaction with TDens is better than with DOM
 
-# trying UDens
-h <- update(all3, .~. + sqrt(UDens))
-i <- update(all3, .~. + poly(sqrt(UDens),2))
-j <- update(all1, .~. + poly(sqrt(UDens),2))
-k <- update(all1, .~. + Week*poly(sqrt(UDens),2))
-AICctab(all3, h, i, j, k)
-anova(all3, i)
-# UDens not useful
-# trying DOM
-l <- update(all3, .~. + DOM)
-anova(all3, l)
-m <- update(all3, .~. + DOM + Week:DOM)
-AICctab(all3, l, m)
-# DOM main effect and interaction with Week
+all4 <- a
 
 
-rm(list=c("a","b","c","d","e","f","g",
-          "h","i","j","k","l","m"))
-all4 <- update(all3, .~. + DOM + Week:DOM)
+summary(all4)
 
-
-summary(all4) # failure to converge 0.0117 (tot 0.002)
 hist(resid(all4)) # very Gaussian(!), except for those two outliers
-all4sim <- simulateResiduals(all4, plot=T, n=1000) # beautiful :)
-plot(all4sim)
-testDispersion(all4sim) # 1.2055 but p value sig because of sample size
+simres <- simulateResiduals(all4, plot = T, n = 1000) # beautiful :)
+plot(simres)
+testDispersion(simres) # 1.4445 but p value sig because of sample size
 
-hist(all4sim) # uniform as should be
-plotResiduals(all4sim, form=mdata$Week)
-plotResiduals(all4sim, form=mdata$CH)
-plotResiduals(all4sim, form=mdata$TDens)
-plotResiduals(all4sim, form=mdata$DOM)
+hist(simres) # uniform as should be
+plotResiduals(simres, form = m_all$Week)
+plotResiduals(simres, form = m_all$TDens)
+plotResiduals(simres, form = m_all$DOM)
 # all good
-
-# exploring convergence issue 
-all4opt <- allFit(all4)
-summary(all4opt)$which.OK # only 1/7 optimisers failed
-summary(all4opt)$llik # all pretty similar values so I think bobyqa good choice
-summary(all4opt)$fixef
-# use bobyqa
-
-
-all5 <- update(all4, control=glmerControl(optimizer = "bobyqa"))
-summary(all5)
-
-all5sim <- simulateResiduals(all5, n=1000)
-plot(all5sim)
-testDispersion(all5sim)
-hist(all5sim)
 
 
 # further selection
 
-a <- update(all5, .~. - Week:(log(CH)+log(TDens)))
-b <- update(all5, .~. - Week:(log(CH)+log(TDens)) - log(CH))
-c <- update(all5, .~. - Week:(log(CH)+log(TDens)) - log(TDens))
-d <- update(all5, .~. - Week*(log(CH)+log(TDens)))
-
-AICctab(all1, all2, all3, all4, all5, a, b, c, d,
-        weights=T, base=T, logLik=T)
-rm(list=c("a","b","c","d"))
-
-all6 <- update(all5, .~. - Week:(log(CH)+log(TDens)))
-AICctab(all1, all2, all3, all4, all5, all6, weights=T, base=T, logLik=T)
-summary(all6)
+drop1(all4)
+# can't drop any existing variables
 
 # interactions between predictors. CH:DOM sig but mostly for Moss (only 2 Points)
-# e <- update(all6, .~. + DOM*log(CH))
-# f <- update(all6, .~. + DOM*log(TDens))
-# g <- update(all6, .~. + DOM*(log(CH)+log(TDens)))
-# AICctab(all6, e, f, g)
-# 
-# h <- update(all6, .~. + DOM*log(CH) - log(TDens))
-# AICctab(all6, e, f, g, h)
-# 
-# summary(e)
-# plot(allEffects(e))
-# plot(allEffects(h))
-# rm(list=c("e","f","g","h"))
-
-
-
-## Matching fruiting phenology to abundance ##
-
-
-allfruit.0 <- glmmTMB(Point_Abun ~ Observer + (1|Point) + (1|Days),
-                      data=mdata_fr, family=poisson)
-summary(allfruit.0)
-
-allfruit.1 <- update(allfruit.0, .~. + Rubus + Vaccinium + Fran_alnu + Sorb_aucu)
-allfruit.2 <- update(allfruit.0, .~. + poly(Rubus,2) + poly(Vaccinium,2) + 
-                       poly(Fran_alnu,2) + Sorb_aucu)
-allfruit.3 <- update(allfruit.0, .~. + poly(Rubus,3) + poly(Vaccinium,3) + 
-                       poly(Fran_alnu,3) + Sorb_aucu)
-allfruit.4 <- update(allfruit.0, .~. + poly(Rubus,4) + poly(Vaccinium,4) + 
-                       poly(Fran_alnu,4) + Sorb_aucu)
-
-AICctab(allfruit.0, allfruit.1, allfruit.2)
+a <- update(all4, .~. + DOM:logTDens)
+AICctab(all4, a)
+# close to 2dAICc but better to not include for parsimony
+b <- update(all4, .~. - logTDens + DOM:logTDens)
+AICctab(all4, a, b)
+summary(a)
+summary(b)
+# same again, although a and b are rather similar wrt AIC and df!
 
 ### ###
 
@@ -328,26 +281,26 @@ inv1 <- update(inv0, .~. + Moss)
 anova(inv0, inv1)
 
 
-a <- update(inv1, .~. + log(CH) + log(TDens))
-b <- update(inv1, .~. + poly(log(CH),2) + log(TDens))
-c <- update(inv1, .~. + log(CH) + poly(log(TDens),2))
-d <- update(inv1, .~. + poly(log(CH),2) + poly(log(TDens),2))
-e <- update(inv1, .~. + log(CH)*Week + log(TDens)*Week)
+a <- update(inv1, .~. + logCH + logTDens)
+b <- update(inv1, .~. + poly(logCH,2) + logTDens)
+c <- update(inv1, .~. + logCH + poly(logTDens,2))
+d <- update(inv1, .~. + poly(logCH,2) + poly(logTDens,2))
+e <- update(inv1, .~. + logCH*Week + logTDens*Week)
 AICctab(inv1, a, b, c, d, e)
 # although still ns, the interaction with Week has the closest AIC to inv1
-f <- update(inv1, .~. + poly(log(CH),2)*Week + poly(log(TDens),2)*Week)
+f <- update(inv1, .~. + poly(logCH,2)*Week + poly(logTDens,2)*Week)
 AICctab(inv1, a, b, c, d, e, f)
 
-g <- update(inv1, .~. + log(CH)*Week + log(TDens))
-h <- update(inv1, .~. + log(CH) + log(TDens)*Week)
+g <- update(inv1, .~. + logCH*Week + logTDens)
+h <- update(inv1, .~. + logCH + logTDens*Week)
 AICctab(inv1, a, b, c, d, e, f, g, h)
-i <- update(inv1, .~. + log(CH)*Week + poly(log(TDens),2))
-j <- update(inv1, .~. + log(CH) + poly(log(TDens),2)*Week)
+i <- update(inv1, .~. + logCH*Week + poly(logTDens,2))
+j <- update(inv1, .~. + logCH + poly(logTDens,2)*Week)
 AICctab(inv1, a, c, e, h, i, j)
-k <- update(inv1, .~. + log(TDens)*Week)
-l <- update(inv1, .~. + log(TDens))
-m <- update(inv1, .~. + log(CH)*Week)
-n <- update(inv1, .~. + log(CH))
+k <- update(inv1, .~. + logTDens*Week)
+l <- update(inv1, .~. + logTDens)
+m <- update(inv1, .~. + logCH*Week)
+n <- update(inv1, .~. + logCH)
 AICctab(inv1, l, m, n, k)
 # not useful!
 
@@ -477,26 +430,26 @@ omn2 <- update(omn1, .~. + HabClass)
 anova(omn1, omn2)
 
 
-a <- update(omn2, .~. + log(CH) + log(TDens))
-b <- update(omn2, .~. + poly(log(CH),2) + log(TDens))
-c <- update(omn2, .~. + log(CH) + poly(log(TDens),2))
-d <- update(omn2, .~. + poly(log(CH),2) + poly(log(TDens),2))
-e <- update(omn2, .~. + log(CH)*Week + log(TDens)*Week)
+a <- update(omn2, .~. + logCH + logTDens)
+b <- update(omn2, .~. + poly(logCH,2) + logTDens)
+c <- update(omn2, .~. + logCH + poly(logTDens,2))
+d <- update(omn2, .~. + poly(logCH,2) + poly(logTDens,2))
+e <- update(omn2, .~. + logCH*Week + logTDens*Week)
 AICctab(omn2, a, b, c, d, e)
 # no poly
-f <- update(omn2, .~. + log(CH)*Week + log(TDens))
-g <- update(omn2, .~. + log(CH) + log(TDens)*Week)
+f <- update(omn2, .~. + logCH*Week + logTDens)
+g <- update(omn2, .~. + logCH + logTDens*Week)
 AICctab(omn2, a, b, c, d, e, f, g)
 # interaction CH:Week + TD is best
-h <- update(omn2, .~. + log(CH)*Week) 
-i <- update(omn2, .~. + log(CH))
+h <- update(omn2, .~. + logCH*Week) 
+i <- update(omn2, .~. + logCH)
 AICctab(omn2, a, f, h, i)
 
 rm(list=c("a","b","c","d","e","f","g","h","i"))
-omn3 <- update(omn2, .~. + log(CH)*Week + log(TDens))
+omn3 <- update(omn2, .~. + logCH*Week + logTDens)
 
 
-a <- update(omn3, .~. + scaleTPD - log(TDens))
+a <- update(omn3, .~. + scaleTPD - logTDens)
 b <- update(omn3, .~. + scaleTPD) 
 AICctab(omn3, a, b) # keep
 c <- update(omn3, .~. + scaleTPD*Week)
