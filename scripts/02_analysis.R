@@ -137,7 +137,7 @@ i <- update(all1, .~. + scaleUDens)
 j <- update(all1, .~. + UDens)
 k <- update(all1, .~. + DOM)
 AICctab(all1, c, d, e, f, g, h, i, j, k) 
-# most variables not signficant, but testing poly before discarding
+# most variables not significant, but testing poly before discarding
 f <- update(all1, .~. + poly(scaleTPD, 2))
 g <- update(all1, .~. + poly(TPD, 2))
 h <- update(all1, .~. + poly(TDiv, 2))
@@ -148,7 +148,7 @@ AICctab(all1, c, d, e, f, g, h, i, j, k)
 
 # now, moving to variables which have an effect:
 all2 <- k
-# DOM clearly important, so trying other variables in addition to DOM
+# DOM clearly important, so trying other variables from e and d above in addition to DOM
 a <- update(all1, .~. + scaleCC)
 b <- update(all1, .~. + logCH) # log better logically and statistically than scale
 c <- update(all1, .~. + logTDens)
@@ -165,37 +165,53 @@ a <- update(all2, .~. + logCH)
 b <- update(all2, .~. + logTDens)
 c <- update(all2, .~. + logCH + logTDens)
 d <- update(all2, .~. + logCH + logTDens + logCH:logTDens)
-AICctab(all2, a, b, c, d) 
-# both together (or with interaction) does not improve model (delta = 0.3 for 1 df) 
-# among a and b, TDens better than CH, so retain only CH
+e <- update(all2, .~. + logCH + logCH:logTDens)
+f <- update(all2, .~. + logTDens + logCH:logTDens)
+AICctab(all2, a, b, c, d, e, f) 
+# e is useless
+# among a and b, TDens better than CH, although both pass delta threshold
+# since this suggests both are useful, what happens when both included (c)?
+# including logCH after logTDens already included does not explain much (delta 0.6)
+# so compare b with d and f
+AICctab(all2, b, d, f)
+# d is the best!
 
 # but trying poly before making decision
-e <- update(a, .~. + poly(logCH, 2))
-f <- update(a, .~. + poly(logTDens, 2))
-AICctab(all2, a, b, e, f)
-# poly very poor, both linear better than both poly
+g <- update(all2, .~. + poly(logCH, 2))
+h <- update(all2, .~. + poly(logTDens, 2))
+AICctab(all2, a, b, d, f, g, h)
+# poly (g, h) not better than linear (a, b)
 
-all3 <- b
+all3 <- d
 summary(all3)
 
-
+# retaining some simpler best performing models for comparison with week interaction
+a <- b
+b <- f
 # interaction of predictors with Week (of pertinence to question)
-a <- update(all3, .~. + Week:DOM)
-b <- update(all3, .~. + Week:logTDens)
-c <- update(all3, .~. + Week:(DOM + logTDens))
-AICctab(all3, a, b, c) 
-# interaction with both is poor, so drop c
-drop1(c)
-# dropping interaction with TDens is better than with DOM
+c <- update(all3, .~. + Week:DOM)
+d <- update(all3, .~. + Week:logTDens)
+e <- update(all3, .~. + Week:(DOM + logTDens))
+f <- update(all3, .~. + Week:logCH)
+g <- update(all3, .~. + Week:(DOM + logCH))
 
-all4 <- a
+h <- update(a, .~. + Week:DOM)
+i <- update(a, .~. + Week:logTDens)
+k <- update(a, .~. + Week:logCH)
+AICctab(all3, a, b, h, i, k)
+
+AICctab(all3, a, b, c, d, e, f, g) 
+# interaction with both is poor, so drop e and g
+drop1(e)
+# dropping the interaction with TDens is better than with DOM
+
+all4 <- c
 
 
 summary(all4)
 
 hist(resid(all4)) # very Gaussian(!), except for those two outliers
 simres <- simulateResiduals(all4, plot = T, n = 1000) # beautiful :)
-plot(simres)
 testDispersion(simres) # 1.4445 but p value sig because of sample size
 
 hist(simres) # uniform as should be
@@ -212,13 +228,16 @@ drop1(all4)
 
 # interactions between predictors. CH:DOM sig but mostly for Moss (only 2 Points)
 a <- update(all4, .~. + DOM:logTDens)
-AICctab(all4, a)
-# close to 2dAICc but better to not include for parsimony
-b <- update(all4, .~. - logTDens + DOM:logTDens)
+b <- update(all4, .~. + DOM:logCH)
 AICctab(all4, a, b)
-summary(a)
-summary(b)
-# same again, although a and b are rather similar wrt AIC and df!
+# close to 2dAICc but better to not include for parsimony
+c <- update(all4, .~. - logCH + DOM:logCH)
+d <- update(all4, .~. - logTDens + DOM:logTDens)
+AICctab(all4, a, b, c, d)
+# none of these are better
+
+# final model is all4
+summary(all4)
 
 ### ###
 
