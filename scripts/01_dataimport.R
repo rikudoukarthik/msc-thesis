@@ -22,13 +22,19 @@ birds_codes <- readxl::read_xlsx("data/data_Birds_2021Feb26.xlsx", "Species") %>
 # - Excluding Sky flyovers (6752/7323 rows left)
 # - Excluding birds that did not enter 30m radius (3208/7323; 2840/6752 left)
 
-# This altogether results in exclusion of 61.5% of observations, i.e., it is 38.5% of birds0
+# This altogether results in exclusion of 61.5% of observations, i.e., it is 38.75% of birds0
 
 birds0 <- readxl::read_xlsx("data/data_Birds_2021Feb26.xlsx", "Birds")
 
+birds_sampling <- birds0 %>% 
+  distinct(Week, Date, Observer, Point, StartTime, EndTime, Weather, Wind, Visibility)
+
 birds1 <- birds0 %>% 
   inner_join(birds_codes, by = "Spec_code") %>% 
-  filter(Flyover != "2", Within_30m == 1)
+  filter(Flyover != "2", Within_30m == 1) %>% 
+  # for filling in zeroes for sampling events with no species passing filters
+  right_join(birds_sampling) 
+
 
 100 * length(birds1$Spec_code) / length(birds0$Spec_code)
 
@@ -86,7 +92,8 @@ birds2 <- birds1 %>%
 # all species
 birds_all <- birds2 %>% 
   group_by(Period, Point, Week, Days, Observer, CoD, Weather) %>% 
-  summarise(Point_Abun = sum(Spec_Point_Abun)) %>% 
+  # filling in zeroes for sampling events with no birds passing filters
+  summarise(Point_Abun = replace_na(sum(Spec_Point_Abun), 0)) %>% 
   group_by(Week) %>% 
   mutate(Week_TotAbun = sum(Point_Abun),
          Week_MeanAbun = mean(Point_Abun),
@@ -94,13 +101,17 @@ birds_all <- birds2 %>%
   ungroup() %>% 
   mutate(RelAbun = round(Point_Abun / Week_TotAbun, 4),
          HabSel = round(Point_Abun / Week_MeanAbun, 4), 
-         HabSel2 = round(Point_Abun / Week_MeanAbun2, 4)) %>% 
-  ungroup()
+         HabSel2 = round(Point_Abun / Week_MeanAbun2, 4))
 
 # individual guilds
 birds_guild <- birds2 %>% 
+  group_by(Period, Point, Week, Days, Observer, CoD, Weather) %>% 
+  # filling in zeroes for the five guilds
+  complete(GuildFeed = unique(birds_codes$GuildFeed), 
+           fill = list(Spec_Point_Abun = 0)) %>% 
+  filter(!is.na(GuildFeed)) %>% 
   group_by(Period, Point, Week, Days, Observer, CoD, Weather, GuildFeed) %>% 
-  summarise(Point_Abun = sum(Spec_Point_Abun)) %>% 
+  summarise(Point_Abun = replace_na(sum(Spec_Point_Abun), 0)) %>% 
   group_by(Week) %>% 
   mutate(Week_TotAbun = sum(Point_Abun),
          Week_MeanAbun = mean(Point_Abun),
@@ -108,24 +119,7 @@ birds_guild <- birds2 %>%
   ungroup() %>% 
   mutate(RelAbun = round(Point_Abun / Week_TotAbun, 4),
          HabSel = round(Point_Abun / Week_MeanAbun, 4), 
-         HabSel2 = round(Point_Abun / Week_MeanAbun2, 4)) %>% 
-  ungroup()
-
-# migrants and non-migrants
-birds_mig <- birds2 %>% 
-  group_by(Period, Point, Week, Days, Observer, CoD, Weather, Migration75) %>% 
-  summarise(Point_Abun = sum(Spec_Point_Abun)) %>% 
-  group_by(Week) %>% 
-  mutate(Week_TotAbun = sum(Point_Abun),
-         Week_MeanAbun = mean(Point_Abun),
-         Week_MeanAbun2 = (sum(Point_Abun) / 32)) %>% 
-  ungroup() %>% 
-  mutate(RelAbun = round(Point_Abun / Week_TotAbun, 4),
-         HabSel = round(Point_Abun / Week_MeanAbun, 4), 
-         HabSel2 = round(Point_Abun / Week_MeanAbun2, 4)) %>% 
-  ungroup()
-
-
+         HabSel2 = round(Point_Abun / Week_MeanAbun2, 4)) 
 
 # species detection information
 birds_summary <- birds2 %>%
@@ -173,15 +167,14 @@ habvar <- readxl::read_xlsx("data/data_HabVar_2021Feb26.xlsx", "Point Descriptio
 # Merging bird and habitat variables into one tibble
 m_all <- left_join(birds_all, habvar, by = "Point")
 m_guild <- left_join(birds_guild, habvar, by = "Point")
-m_mig <- left_join(birds_mig, habvar, by = "Point")
 
 
 # Saving as RData to import later ---------------------------------------------------
 
 # saving RData for use in analysis
 rm(list = setdiff(ls(envir = .GlobalEnv), 
-                  c("birds_all","birds_guild","birds_mig","habvar",
-                    "m_all","m_guild","m_mig","birds_codes","birds_summary")), 
+                  c("birds_all","birds_guild","habvar",
+                    "m_all","m_guild","birds_codes","birds_summary")), 
    pos = ".GlobalEnv")
 save.image("data/01_dataimport.RData")
 
