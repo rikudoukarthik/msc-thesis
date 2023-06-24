@@ -33,7 +33,8 @@ birds1 <- birds0 %>%
   inner_join(birds_codes, by = "Spec_code") %>% 
   filter(Flyover != "2", Within_30m == 1) %>% 
   # for filling in zeroes for sampling events with no species passing filters
-  right_join(birds_sampling) 
+  right_join(birds_sampling) %>% 
+  mutate(Observer = factor(Observer, levels = c("IF", "KT")))
 
 
 100 * length(birds1$Spec_code) / length(birds0$Spec_code)
@@ -128,6 +129,12 @@ birds_summary <- birds2 %>%
             Tot_Det = sum(Spec_Point_Abun)) %>% 
   ungroup()
 
+birds_species_raw <- birds0 %>% 
+  left_join(birds_codes)
+
+birds_species_filt <- birds1 %>% 
+  left_join(birds_codes)
+
 
 
 # Habitat ---------------------------------------------------------------------------
@@ -158,7 +165,8 @@ habvar <- readxl::read_xlsx("data/data_HabVar_2021Feb26.xlsx", "Point Descriptio
          scaleTPD = as.vector(scale(TPD)),
          scaleUDens = as.vector(scale(UDens)),
          logCH = log(CH),
-         logTDens = log(TDens))
+         logTDens = log(TDens)) %>% 
+  mutate(DOM = as.factor(DOM))
 
 
 
@@ -173,8 +181,8 @@ m_guild <- left_join(birds_guild, habvar, by = "Point")
 
 # saving RData for use in analysis
 rm(list = setdiff(ls(envir = .GlobalEnv), 
-                  c("birds_all","birds_guild","habvar",
-                    "m_all","m_guild","birds_codes","birds_summary")), 
+                  c("birds_all","birds_guild","habvar","m_all","m_guild","birds_codes",
+                    "birds_summary","birds_species_raw","birds_species_filt")), 
    pos = ".GlobalEnv")
 save.image("data/01_dataimport.RData")
 
