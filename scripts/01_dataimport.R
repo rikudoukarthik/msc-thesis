@@ -26,6 +26,9 @@ birds_codes <- readxl::read_xlsx("data/data_Birds_2021Feb26.xlsx", "Species") %>
 
 birds0 <- readxl::read_xlsx("data/data_Birds_2021Feb26.xlsx", "Birds")
 
+birds_species_raw <- birds0 %>% inner_join(birds_codes) # inner gets rid of "UNID" entries
+
+
 birds_sampling <- birds0 %>% 
   distinct(Week, Date, Observer, Point, StartTime, EndTime, Weather, Wind, Visibility)
 
@@ -36,8 +39,7 @@ birds1 <- birds0 %>%
   right_join(birds_sampling) %>% 
   mutate(Observer = factor(Observer, levels = c("IF", "KT")))
 
-
-100 * length(birds1$Spec_code) / length(birds0$Spec_code)
+birds_species_filt <- birds1
 
 
 # - Removing columns to retain Week, Observer, Point, Weather, Wind, Visibility, Number
@@ -129,13 +131,6 @@ birds_summary <- birds2 %>%
             Tot_Det = sum(Spec_Point_Abun)) %>% 
   ungroup()
 
-birds_species_raw <- birds0 %>% 
-  left_join(birds_codes)
-
-birds_species_filt <- birds1 %>% 
-  left_join(birds_codes)
-
-
 
 # Habitat ---------------------------------------------------------------------------
 
@@ -166,7 +161,10 @@ habvar <- readxl::read_xlsx("data/data_HabVar_2021Feb26.xlsx", "Point Descriptio
          scaleUDens = as.vector(scale(UDens)),
          logCH = log(CH),
          logTDens = log(TDens)) %>% 
-  mutate(DOM = as.factor(DOM))
+  mutate(DOM = case_when(DOM == "0" ~ "Bare",
+                         DOM == "Carex" ~ "Graminoid",
+                         TRUE ~ DOM)) %>% 
+  mutate(DOM = factor(DOM, levels = c("Bare", "Graminoid", "Moss", "Rubus", "Vaccinium")))
 
 
 
