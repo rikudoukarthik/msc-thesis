@@ -4,333 +4,325 @@ library(Hmisc)
 library(patchwork)
 library(RColorBrewer)
 library(ggpubr)
+library(magrittr)
+library(bbmle)
+library(tictoc)
 
+load("data/01_dataimport.RData")
+load("data/02_analysis.RData")
 
-# Visualisations ####
+source("scripts/functions.R")
 
-cmult <- 1.96
+### setting theme
 
-# theme_simple <- theme_bw() + theme(panel.grid.major = element_blank(),
-# panel.grid.minor = element_blank(),
-# panel.border = element_rect(size=1.2))
 theme_simple <- theme_classic()
 theme_set(theme_simple)
 
 # purples: #A204B4 #D91EFA
 cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", 
                 "#F0E442", "#0072A2", "#D55E00", "#CC79A7")
-Set1 <- brewer.pal(9, name="Set1")
-Set3 <- brewer.pal(12, name="Set3")
+Set1 <- brewer.pal(9, name = "Set1")
+Set3 <- brewer.pal(12, name = "Set3")
 
-### ###
+Gauss_coeff <- 1.96
 
-### Visualising results: summaries ####
+
+### Summaries ####
 
 # summary statistics etc. of some results
 
+sum_stat <- data.frame(
+  
+  UNIQUE.SPEC.RAW = birds_species_raw %>% filter(!is.na(Species)) %$% n_distinct(Spec_code),
+  UNIQUE.SPEC.FILT = birds_species_filt %>% filter(!is.na(Species)) %$% n_distinct(Spec_code),
+  
+  FORAGING.RAW = birds_species_raw %>% filter(Foraging == 1) %>% nrow(),
+  FORAGING.FILT = birds_species_filt %>% filter(Foraging == 1) %>% nrow(),
+  FORAGING.FILT.FRUIT = birds_species_filt %>% filter(Fruits == 1) %>% nrow(),
+  
+  DET.TOT.RAW = birds_species_raw %>% nrow(),
+  DET.AUD.RAW = birds_species_raw %>% filter(Heard == 1 & Seen == 0) %>% nrow(),
+  DET.VIS.RAW = birds_species_raw %>% filter(Heard == 0 & Seen == 1) %>% nrow(),
+  DET.BOTH.RAW = birds_species_raw %>% filter(Heard == 1 & Seen == 1) %>% nrow(),
+  
+  DET.TOT.FILT = birds_species_filt %>% nrow(),
+  DET.AUD.FILT = birds_species_filt %>% filter(Heard == 1 & Seen == 0) %>% nrow(),
+  DET.VIS.FILT = birds_species_filt %>% filter(Heard == 0 & Seen == 1) %>% nrow(),
+  DET.BOTH.FILT = birds_species_filt %>% filter(Heard == 1 & Seen == 1) %>% nrow(),
+  
+  DET.IF.RAW = birds_species_raw %>% filter(Observer == "IF") %>% nrow(),
+  DET.KT.RAW = birds_species_raw %>% filter(Observer == "KT") %>% nrow(),
+  DET.IF.FILT = birds_species_filt %>% filter(Observer == "IF") %>% nrow(),
+  DET.KT.FILT = birds_species_filt %>% filter(Observer == "KT") %>% nrow()
+  
+  ) %>% 
+  mutate(
+    
+    DET.AUD.RAW.PC = (100*DET.AUD.RAW/DET.TOT.RAW) %>% round(1),
+    DET.VIS.RAW.PC = (100*DET.VIS.RAW/DET.TOT.RAW) %>% round(1),
+    DET.BOTH.RAW.PC = (100*DET.BOTH.RAW/DET.TOT.RAW) %>% round(1),
+    
+    DET.AUD.FILT.PC = (100*DET.AUD.FILT/DET.TOT.FILT) %>% round(1),
+    DET.VIS.FILT.PC = (100*DET.VIS.FILT/DET.TOT.FILT) %>% round(1),
+    DET.BOTH.FILT.PC = (100*DET.BOTH.FILT/DET.TOT.FILT) %>% round(1),
+    
+    DET.IF.RAW.PC = (100*DET.IF.RAW/DET.TOT.RAW) %>% round(1),
+    DET.KT.RAW.PC = (100*DET.KT.RAW/DET.TOT.RAW) %>% round(1),
+    DET.IF.FILT.PC = (100*DET.IF.FILT/DET.TOT.FILT) %>% round(1),
+    DET.KT.FILT.PC = (100*DET.KT.FILT/DET.TOT.FILT) %>% round(1)
+    
+  )
 
-### detections of birds ###
 
-# number of unique species observed in total = 69
-n_distinct( (b_rawdata %>% 
-               inner_join(b_speccode, by="Spec_code") %>% 
-               filter(Species != is.na(Species)))$Spec_code)
-# number of unique species observed in relevant data = 45
-n_distinct( (b_data %>% 
-               filter(Species != is.na(Species)))$Spec_code)
-# number of observations of foraging
-dim(filter(b_rawdata, Foraging==1)) # 570 individual birds foraging
-dim(filter(b_data, Foraging==1)) # 494 individual birds foraging within 30 m
-dim(filter(b_data, Fruits==1)) # 2 observations of birds eating fruits
-# visual/auditory
-dim(filter(b_rawdata, Heard==1 & Seen==0)) # 6398 = 86.9%
-dim(filter(b_rawdata, Heard==0 & Seen==1)) # 361 = 4.9%
-dim(filter(b_rawdata, Heard==1 & Seen==1)) # 608 = 8.25%
-dim(filter(b_data, Heard==1 & Seen==0)) # 2209 = 77.78%
-dim(filter(b_data, Heard==0 & Seen==1)) # 201 = 7.08%
-dim(filter(b_data, Heard==1 & Seen==1)) # 430 = 15.14%
-# observer effect
-dim(filter(b_rawdata, Observer=="IF")) # 3371   
-dim(filter(b_rawdata, Observer=="KT")) # 3996   
-dim(filter(b_data, Observer=="IF")) # 834  
-dim(filter(b_data, Observer=="KT")) # 2006 
-
-### ###
-
-### Visualising results: tables  ####
-
+### Tables  ####
 
 ### Table: model for all birds ###
-allAIC <- AICctab(all.1, all.2, all.3, all.4, all.5, all.6, weights=T, base=T, logLik=T)
-summary(all.6)
+
+allAIC <- AICctab(all1, all2, all3, all4, 
+                  weights = T, base = T, logLik = T)
+summary(all4)
 # printing AICc table for import into Word in Methods section
 stargazer(as.data.frame(allAIC), 
-          summary = F,
-          type="html", 
-          out = "D:/COLLEGE/2019 - MSc Ecology/Thesis/4 - birds/2 - Data Analysis/Analysis1_Birds-HabVar/all6summary.html")
+          summary = F, type = "html", out = "outputs/summary_all.html")
+
 
 ### Table: models for guilds ###
-summary(inv.4)
-summary(omn.3)
-invAIC <- AICctab(inv.1, inv.2, inv.3, inv.4, weights=T, base=T, logLik=T)
-omnAIC <- AICctab(omn.1, omn.2, omn.3, weights=T, base=T, logLik=T)
-stargazer(rbind(as.data.frame(invAIC), 
-                as.data.frame(omnAIC)), 
-          summary = F,
-          type="html", 
-          out = "D:/COLLEGE/2019 - MSc Ecology/Thesis/4 - birds/2 - Data Analysis/
-          Analysis1_Birds-HabVar/gldsummary.html")
 
-### Table: models for caterpillars ###
-catAIC <- AICctab(cat.0, cat.1, cat.2, cat.3, weights=T, base=T, logLik=T)
-stargazer(as.data.frame(catAIC), 
-          summary = F,
-          type="html", 
-          out = "D:/COLLEGE/2019 - MSc Ecology/Thesis/4 - birds/2 - Data Analysis/Analysis1_Birds-HabVar/catsummary.html")
+summary(inv3)
+summary(omn3)
+invAIC <- AICctab(inv1, inv2, inv3, 
+                  weights = T, base = T, logLik = T)
+omnAIC <- AICctab(omn1, omn2, omn3, 
+                  weights = T, base = T, logLik = T)
+stargazer(rbind(as.data.frame(invAIC), as.data.frame(omnAIC)), 
+          summary = F, type = "html", out = "outputs/summary_guilds.html")
 
 
+### Table of species detected within 30m  ###
 
-### Table of species detected  ###
+birds_speclist <- birds_species_filt %>%
+  # only considering those IDd to species, not slashes or spuhs
+  filter(Species != is.na(Species)) %>%
+  distinct(Spec_code) %>% 
+  left_join(birds_codes, by = "Spec_code") %>% 
+  arrange(Spec_code) %>% 
+  rownames_to_column("S.No.")
 
-b_speclist30m <- inner_join(unique((b_data %>%
-                                      filter(Species != is.na(Species)) %>%
-                                      select("Spec_code"))),
-                            b_speccode, by = "Spec_code") %>% 
-  arrange(Spec_code) %>% rownames_to_column("S.No.")
-
-stargazer(b_speclist30m, type="html", summary=F,
-          out = "D:/COLLEGE/2019 - MSc Ecology/Thesis/4 - birds/2 - Data Analysis/Analysis1_Birds-HabVar/specieslist.html")
-
+stargazer(birds_speclist, type = "html", summary = F, out = "outputs/specieslist.html")
 
 
 ### Table of points and habitat variables  ###
 
-stargazer(select(habvar, -c(16:20)), type="html", summary=F,
-          out = "D:/COLLEGE/2019 - MSc Ecology/Thesis/4 - birds/2 - Data Analysis/Analysis1_Birds-HabVar/pointhabvar.html")
+stargazer(habvar %>% 
+            dplyr::select(-c(scaleCC, scaleCH, scaleTPD, scaleUDens, logCH, logTDens)), 
+          type = "html", summary = F, out = "outputs/pointhabvar.html")
 
 
-### Table of species with guild info and overall abundances ###
+### Table of species within 30m, with guild info and overall abundances ###
 
-b_speclistOverall <- b_data %>% ungroup() %>% 
-  mutate(Spec_code = fct_collapse(Spec_code, 
-                                  Acc_sp = c("Acc_nis","Acc_sp"),
-                                  Ant_sp = c("Ant_pra","Ant_tri","Ant_sp"),
-                                  Cer_sp = c("Cer_bra","Cer_fam","Cer_sp"),
-                                  Cor_sp = c("Cor_corax","Cor_corone","Cor_monedula","Cor_sp"),
-                                  Phy_sp = c("Phy_col","Phy_tro","Phy_sp"),
-                                  Reg_sp = c("Reg_reg","Reg_ign","Reg_sp"),
-                                  Den_sp = c("Den_maj","Den_med","Den_sp"),
-                                  Fic_sp = c("Fic_sp"),
-                                  Fal_sp = c("Fal_tin","Fal_sp"),
-                                  Mot_sp = c("Mot_alb","Mot_sp"),
-                                  Pas_sp = c("Pas_mon","Pas_sp"),
-                                  Poe_sp = c("Poe_mon","Poe_pal","Poe_sp"),
-                                  Tur_sp = c("Tur_mer","Tur_phi","Tur_pil","Tur_vis","Tur_sp")
+birds_speclist_overall <- birds_species_filt %>% 
+  filter(!is.na(GuildFeed)) %>% # removing sampling events where no birds detected within 30m
+  mutate(Spec_code = fct_collapse(
+    
+    Spec_code, 
+    Acc_sp = c("Acc_nis", "Acc_sp"),
+    Ant_sp = c("Ant_pra", "Ant_tri", "Ant_sp"),
+    Cer_sp = c("Cer_bra", "Cer_fam", "Cer_sp"),
+    Cor_sp = c("Cor_corax", "Cor_corone", "Cor_monedula", "Cor_sp"),
+    Phy_sp = c("Phy_col", "Phy_tro", "Phy_sp"),
+    Reg_sp = c("Reg_reg", "Reg_ign", "Reg_sp"),
+    Den_sp = c("Den_maj", "Den_med", "Den_sp"),
+    Fic_sp = c("Fic_sp"),
+    Fal_sp = c("Fal_tin", "Fal_sp"),
+    Mot_sp = c("Mot_alb", "Mot_sp"),
+    Pas_sp = c("Pas_mon", "Pas_sp"),
+    Poe_sp = c("Poe_mon", "Poe_pal", "Poe_sp"),
+    Tur_sp = c("Tur_mer", "Tur_phi", "Tur_pil", "Tur_vis", "Tur_sp")
+    
   )) %>% 
   group_by(GuildFeed, Spec_code) %>% 
   summarise(TotDet = n()) %>% 
-  inner_join(b_speccode[,1:3], by = "Spec_code") %>% 
+  left_join(birds_codes %>% dplyr::select(-Genus, -Species)) %>% 
   arrange(GuildFeed, desc(TotDet)) %>% rownames_to_column("S.No.")
 
-write.csv(b_speclistOverall, 
-          file="specieslistOverall.csv", 
-          row.names = F)
+write.csv(birds_speclist_overall, file = "outputs/specieslist_overall.csv", row.names = F)
 
 
-
-
-
-
-### ###
-
-### Visualising results: (Fig4) Analysis 1: all birds ####
-
+### Figure 1: all birds ####
 
 ## Week-DOM interaction ##
 
-all.pred1 <- data.frame(Week = seq(1, 13, 0.01),
-                        DOM = sample(unique(mdata$DOM), 1201, replace = T),
-                        Observer = factor("KT", levels = levels(mdata$Observer)),
-                        CCavgsd = mean(mdata$CCavgsd),
-                        TreeDens = mean(mdata$TreeDens))
-all.pred1$All_Abun <- predict(all.6, all.pred1, type="response", re.form=NA)
-# no random effects because interested in population level patterns
+# empty table to predict
+pred_data1 <- data.frame(Week = seq(1, 13, 1)) %>% 
+  group_by(Week) %>% 
+  # need to predict for all five DOM categories at each time-step
+  reframe(DOM = unique(m_all$DOM)) %>% 
+  # other variables at fixed values
+  mutate(Observer = factor("KT", levels = levels(m_all$Observer)),
+         logCH = mean(m_all$logCH),
+         logTDens = mean(m_all$logTDens))
 
-# Ben Bolker's vignette for plotting confidence intervals:
-#(https://bbolker.github.io/mixedmodels-misc/glmmFAQ.html#predictions-andor-confidence-or-prediction-intervals-on-predictions)
-all.pred1mm <- model.matrix(terms(all.6), all.pred1)
-all.pred1pvar <- diag(all.pred1mm %*% tcrossprod(vcov(all.6), all.pred1mm)) # fixef uncertainty only
-# all.pred1tvar <- all.pred1pvar + VarCorr(all.6$Point[1]) + VarCorr(all.6$Days[1]) random uncertainty
-all.pred1 <- data.frame(all.pred1,
-                        lo = all.pred1$All_Abun - exp(cmult*sqrt(all.pred1pvar)),
-                        hi = all.pred1$All_Abun + exp(cmult*sqrt(all.pred1pvar)))
+# predictions
+tic("Bootstrapped predictions for all-birds model")
+prediction <- boot_conf_GLMM(all4,
+                             new_data = pred_data1,
+                             new_data_string = "pred_data1",
+                             nsim = 1000)
+save(prediction, file = "outputs/pred1.RData")
+toc() # 43 min
+# load("outputs/pred1.RData")
+
+# calculating mean and SE from bootstrapped values
+for (j in 1:nrow(pred_data1)) {
+  
+  pred_data1$PRED.LINK[j] <- median(na.omit(prediction[,j]))
+  pred_data1$SE.LINK[j] <- sd(na.omit(prediction[,j]))
+  
+}
+
+pred_data1 <- pred_data1 %>% 
+  mutate(PRED = exp(PRED.LINK),
+         # to transform lower bound of SE (not CI.L! think "mean +- SE")
+         SE.L = exp(PRED.LINK - SE.LINK)) %>% 
+  mutate(SE = PRED - SE.L) %>% 
+  mutate(CI.U = PRED + Gauss_coeff*SE,
+         CI.L = PRED - Gauss_coeff*SE) %>% 
+  dplyr::select(Week, DOM, PRED, CI.L, CI.U)
+
+
 # plotting
-all.pred1plot <- ggplot(aes(x=Week, y=All_Abun, col=DOM, fill=DOM), data=all.pred1) +
-  scale_fill_manual(values = cbbPalette, 
-                    labels = c("Bare","Graminoid","Moss","Rubus","Vaccinium")) +
-  scale_colour_manual(values = cbbPalette,
-                      labels = c("Bare","Graminoid","Moss","Rubus","Vaccinium")) +
-  geom_line(size=2) +
-  geom_ribbon(aes(ymin=lo, ymax=hi), alpha=0.3, colour=NA) +
-  scale_y_continuous(breaks = seq(0,40,4)) +
-  scale_x_continuous(breaks = seq(1,13,1)) +
-  coord_cartesian(ylim = c(2,18)) +
+plot1 <- ggplot(pred_data1,
+                aes(x = Week, y = PRED, col = DOM, fill = DOM)) +
+  scale_fill_manual(values = cbbPalette) +
+  scale_colour_manual(values = cbbPalette) +
+  geom_point(size = 2, position = position_dodge(0.65)) +
+  geom_errorbar(aes(ymin = CI.L, ymax = CI.U),
+                size = 1, width = 0.6, position = position_dodge(0.65)) +
+  # geom_line(linewidth = 2) +
+  # geom_ribbon(aes(ymin = CI.L, ymax = CI.U), alpha = 0.3, colour = NA) +
+  scale_y_continuous(breaks = seq(0, 40, 4)) +
+  scale_x_continuous(breaks = seq(1, 13, 1)) +
+  coord_cartesian(ylim = c(2, 18)) +
   labs(y = "Bird detections per point count") +
-  guides(col=guide_legend(title = "Ground veg."),
-         fill=guide_legend(title = "Ground veg."))
+  guides(col = guide_legend(title = "Ground veg."),
+         fill = guide_legend(title = "Ground veg."))
 
 
-## Difference between DOM layers ##
-# Week 1
-all.pred2a <- data.frame(Week = 1,
-                         DOM = sample(unique(mdata$DOM), 1201, replace = T),
-                         Observer = factor("KT", levels = levels(mdata$Observer)),
-                         CCavgsd = mean(mdata$CCavgsd),
-                         TreeDens = mean(mdata$TreeDens))
-all.pred2a$All_Abun <- predict(all.6, all.pred2a, type="response", re.form=NA)
-all.pred2amm <- model.matrix(terms(all.6), all.pred2a)
-all.pred2apvar <- diag(all.pred2amm %*% tcrossprod(vcov(all.6), all.pred2amm)) # fixef uncertainty only
-all.pred2a <- data.frame(all.pred2a,
-                         lo = all.pred2a$All_Abun - exp(cmult*sqrt(all.pred2apvar)),
-                         hi = all.pred2a$All_Abun + exp(cmult*sqrt(all.pred2apvar)))
-# Week 13
-all.pred2b <- data.frame(Week = 13,
-                         DOM = sample(unique(mdata$DOM), 1201, replace = T),
-                         Observer = factor("KT", levels = levels(mdata$Observer)),
-                         CCavgsd = mean(mdata$CCavgsd),
-                         TreeDens = mean(mdata$TreeDens))
-all.pred2b$All_Abun <- predict(all.6, all.pred2b, type="response", re.form=NA)
-all.pred2bmm <- model.matrix(terms(all.6), all.pred2b)
-all.pred2bpvar <- diag(all.pred2bmm %*% tcrossprod(vcov(all.6), all.pred2bmm)) # fixef uncertainty only
-all.pred2b <- data.frame(all.pred2b,
-                         lo = all.pred2b$All_Abun - exp(cmult*sqrt(all.pred2bpvar)),
-                         hi = all.pred2b$All_Abun + exp(cmult*sqrt(all.pred2bpvar)))
-# joining
-all.pred2 <- rbind(all.pred2a, all.pred2b)
-# plotting
-all.pred2plot <- ggplot(data=all.pred2, mapping=aes(x=DOM, y=All_Abun, col=factor(Week))) +
+# Difference between DOM layers 
+plot2 <- ggplot(pred_data1 %>% filter(Week %in% c(1, 13)),
+                aes(x = DOM, y = PRED, col = factor(Week))) +
   guides(col = guide_legend(title = "Week", reverse = T)) +
   scale_colour_manual(values = cbbPalette[c(7, 6)]) +
-  stat_summary(fun = "mean", geom = "point", size = 3.5) +
-  geom_errorbar(aes(ymin = lo, ymax = hi), width = 0.2, size = 1.5) +
-  geom_ribbon(aes(ymin=lo, ymax=hi), alpha=0.3, colour=NA) +
-  scale_y_continuous(breaks = seq(0,40,4)) +
-  scale_x_discrete(labels = c("Bare","Graminoid","Moss","Rubus","Vaccinium")) +
-  coord_cartesian(ylim = c(2,18)) +
+  geom_point(size = 2, position = position_dodge(0.5)) +
+  geom_errorbar(aes(ymin = CI.L, ymax = CI.U), 
+                size = 1, width = 0.3, position = position_dodge(0.5)) +
+  scale_y_continuous(breaks = seq(0, 40, 4)) +
+  coord_cartesian(ylim = c(2, 30)) +
   labs(y = "Bird detections per point count",
        x = "Ground vegetation") +
-  theme(axis.text.x = element_text(size=7))
+  theme(axis.text.x = element_text(size = 7))
 
 
-## Abun - CCavgsd (for 0 DOM ground layer) ##
-# Week 1
-all.pred3a <- data.frame(Week = 1,
-                         DOM = factor("0", levels = levels(mdata$DOM)),
-                         Observer = factor("KT", levels = levels(mdata$Observer)),
-                         CCavgsd = seq(1, 20, 0.001),
-                         TreeDens = mean(mdata$TreeDens))
+## logCH-logTDens interaction ##
 
-all.pred3a$All_Abun <- predict(all.6, all.pred3a, type="response", re.form=NA)
-all.pred3amm <- model.matrix(terms(all.6), all.pred3a)
-all.pred3apvar <- diag(all.pred3amm %*% tcrossprod(vcov(all.6), all.pred3amm))
-all.pred3a <- data.frame(all.pred3a,
-                         lo = all.pred3a$All_Abun - exp(cmult*sqrt(all.pred3apvar)),
-                         hi = all.pred3a$All_Abun + exp(cmult*sqrt(all.pred3apvar)))
-# Week 13
-all.pred3b <- data.frame(Week = 13,
-                         DOM = factor("0", levels = levels(mdata$DOM)),
-                         Observer = factor("KT", levels = levels(mdata$Observer)),
-                         CCavgsd = seq(1, 20, 0.001),
-                         TreeDens = mean(mdata$TreeDens))
+temp1 <- data.frame(Week = c(1, 13)) %>% 
+  group_by(Week) %>% 
+  # need to predict for full range of values at each time-step
+  reframe(logCH = seq(floor(min(m_all$logCH)), 
+                        ceiling(max(m_all$logCH)), 
+                        0.01)) %>% 
+  # other variables at fixed values
+  mutate(logTDens = mean(m_all$logTDens),
+         DOM = factor("Bare", levels = levels(m_all$DOM)),
+         Observer = factor("KT", levels = levels(m_all$Observer))) 
 
-all.pred3b$All_Abun <- predict(all.6, all.pred3b, type="response", re.form=NA)
-all.pred3bmm <- model.matrix(terms(all.6), all.pred3b)
-all.pred3bpvar <- diag(all.pred3bmm %*% tcrossprod(vcov(all.6), all.pred3bmm))
-all.pred3b <- data.frame(all.pred3b,
-                         lo = all.pred3b$All_Abun - exp(cmult*sqrt(all.pred3bpvar)),
-                         hi = all.pred3b$All_Abun + exp(cmult*sqrt(all.pred3bpvar)))
-# joining
-all.pred3 <- rbind(all.pred3a, all.pred3b)
-# plotting
-all.pred3plot <- ggplot(data=all.pred3, mapping=aes(x=CCavgsd, y=All_Abun, 
-                                                    col=factor(Week), fill=factor(Week))) +
-  guides(col=guide_legend(title="Week", reverse = T),
-         fill=guide_legend(title="Week", reverse = T)) +
-  scale_colour_manual(values=cbbPalette[c(7,6)]) +
-  scale_fill_manual(values=cbbPalette[c(7,6)]) +
-  geom_line(size=1.5) +
-  geom_ribbon(aes(ymin=lo, ymax=hi), col=NA, alpha=0.3) +
-  scale_y_continuous(breaks = seq(0,40,4)) +
-  scale_x_continuous(breaks = seq(0,24,4)) +
-  coord_cartesian(ylim = c(2,20)) +
+temp2 <- data.frame(Week = c(1, 13)) %>% 
+  group_by(Week) %>% 
+  # need to predict for full range of values at each time-step
+  reframe(logTDens = seq(floor(min(m_all$logTDens)), 
+                           ceiling(max(m_all$logTDens)), 
+                           0.01)) %>% 
+  # other variables at fixed values
+  mutate(logCH = mean(m_all$logCH),
+         DOM = factor("Bare", levels = levels(m_all$DOM)),
+         Observer = factor("KT", levels = levels(m_all$Observer)))
+
+pred_data2 <- bind_rows(temp1, temp2, .id = "ID")
+
+
+tic("Bootstrapped predictions for all-birds model (CH and TDens)")
+prediction <- boot_conf_GLMM(all4,
+                             new_data = pred_data2,
+                             new_data_string = "pred_data2",
+                             nsim = 1000)
+save(prediction, file = "outputs/pred2.RData")
+toc() # 65 min
+# load("outputs/pred2.RData")
+
+# calculating mean and SE from bootstrapped values
+for (j in 1:nrow(pred_data2)) {
+  
+  pred_data2$PRED.LINK[j] <- median(na.omit(prediction[,j]))
+  pred_data2$SE.LINK[j] <- sd(na.omit(prediction[,j]))
+  
+}
+
+pred_data2 <- pred_data2 %>% 
+  mutate(PRED = exp(PRED.LINK),
+         # to transform lower bound of SE (not CI.L! think "mean +- SE")
+         SE.L = exp(PRED.LINK - SE.LINK)) %>% 
+  mutate(SE = PRED - SE.L) %>% 
+  mutate(CI.U = PRED + Gauss_coeff*SE,
+         CI.L = PRED - Gauss_coeff*SE) %>% 
+  dplyr::select(ID, Week, logCH, logTDens, PRED, CI.L, CI.U)
+
+
+plot3 <- ggplot(pred_data2 %>% filter(ID == 1),
+                aes(x = logCH, y = PRED, col = factor(Week), fill = factor(Week))) +
+  scale_fill_manual(values = cbbPalette[c(7, 6)]) +
+  scale_colour_manual(values = cbbPalette[c(7, 6)]) +
+  geom_line(linewidth = 2) +
+  geom_ribbon(aes(ymin = CI.L, ymax = CI.U), alpha = 0.3, colour = NA) +
+  scale_y_continuous(breaks = seq(0, 40, 4)) +
+  coord_cartesian(ylim = c(2, 30)) +
+  guides(col = guide_legend(title = "Week", reverse = T),
+         fill = guide_legend(title = "Week", reverse = T)) +
   labs(y = "Bird detections per point count",
-       x = "Canopy heterogeneity") +
-  theme(legend.justification = c(1,0.5))
+       x = "Canopy heterogeneity") 
 
-
-## Abun - TreeDens (for 0 DOM ground layer) ##
-# Week 1
-all.pred4a <- data.frame(Week = 1,
-                         DOM = factor("0", levels = levels(mdata$DOM)),
-                         Observer = factor("KT", levels = levels(mdata$Observer)),
-                         CCavgsd = mean(mdata$CCavgsd),
-                         TreeDens = seq(1,15,0.001))
-
-all.pred4a$All_Abun <- predict(all.6, all.pred4a, type="response", re.form=NA)
-all.pred4amm <- model.matrix(terms(all.6), all.pred4a)
-all.pred4apvar <- diag(all.pred4amm %*% tcrossprod(vcov(all.6), all.pred4amm))
-all.pred4a <- data.frame(all.pred4a,
-                         lo = all.pred4a$All_Abun - exp(cmult*sqrt(all.pred4apvar)),
-                         hi = all.pred4a$All_Abun + exp(cmult*sqrt(all.pred4apvar)))
-# Week 13
-all.pred4b <- data.frame(Week = 13,
-                         DOM = factor("0", levels = levels(mdata$DOM)),
-                         Observer = factor("KT", levels = levels(mdata$Observer)),
-                         CCavgsd = mean(mdata$CCavgsd),
-                         TreeDens = seq(1,15,0.001))
-
-all.pred4b$All_Abun <- predict(all.6, all.pred4b, type="response", re.form=NA)
-all.pred4bmm <- model.matrix(terms(all.6), all.pred4b)
-all.pred4bpvar <- diag(all.pred4bmm %*% tcrossprod(vcov(all.6), all.pred4bmm))
-all.pred4b <- data.frame(all.pred4b,
-                         lo = all.pred4b$All_Abun - exp(cmult*sqrt(all.pred4bpvar)),
-                         hi = all.pred4b$All_Abun + exp(cmult*sqrt(all.pred4bpvar)))
-# joining
-all.pred4 <- rbind(all.pred4a, all.pred4b)
-# plotting
-all.pred4plot <- ggplot(data=all.pred4, mapping=aes(x=TreeDens, y=All_Abun, 
-                                                    col=factor(Week), fill=factor(Week))) +
-  guides(col=guide_legend(title="Week", reverse = T),
-         fill=guide_legend(title="Week", reverse = T)) +
-  scale_colour_manual(values=cbbPalette[c(7,6)]) +
-  scale_fill_manual(values=cbbPalette[c(7,6)]) +
-  geom_line(size=1.5) +
-  geom_ribbon(aes(ymin=lo, ymax=hi), col=NA, alpha=0.3) +
-  scale_y_continuous(breaks = seq(0,40,4)) +
-  scale_x_continuous(breaks = seq(0,20,2)) +
-  coord_cartesian(ylim = c(2,20)) +
+plot4 <- ggplot(pred_data2 %>% filter(ID == 2),
+                aes(x = logTDens, y = PRED, col = factor(Week), fill = factor(Week))) +
+  scale_fill_manual(values = cbbPalette[c(7, 6)]) +
+  scale_colour_manual(values = cbbPalette[c(7, 6)]) +
+  geom_line(linewidth = 2) +
+  geom_ribbon(aes(ymin = CI.L, ymax = CI.U), alpha = 0.3, colour = NA) +
+  scale_y_continuous(breaks = seq(0, 40, 4)) +
+  coord_cartesian(ylim = c(2, 30)) +
+  guides(col = guide_legend(title = "Week", reverse = T),
+         fill = guide_legend(title = "Week", reverse = T)) +
   labs(y = "Bird detections per point count",
-       x = expression(Tree~density~per~100~m^2)) +
-  theme(legend.justification = c(1,0.5))
+       x = "Tree density") 
 
 
+## Figure 1 ##
 
-## Fig.4: analysis 1 ##
+fig_layout <- "
+AAAAAA
+BBCCDD
+"
 
-( ( all.pred1plot | (all.pred2plot + theme(axis.title.y = element_blank())) ) ) /
-  ( ( all.pred3plot | (all.pred4plot + theme(axis.title.y = element_blank())) ) ) +
-  plot_layout(guides="collect") +
-  plot_annotation(tag_levels = "A") & theme(plot.tag = element_text(size = 16)) -> fig4
+fig1_allbirds <- plot1 + 
+  plot2 + 
+  (plot3 + theme(axis.title.y = element_blank())) + 
+  (plot4 + theme(axis.title.y = element_blank())) +
+  plot_layout(design = fig_layout, guides = "collect")  +
+  plot_annotation(tag_levels = "A") & theme(plot.tag = element_text(size = 16)) 
 
-ggsave("Fig4.png", fig4, 
-       width = 18, height = 24, units = "cm", dpi=300)
-
-
-
-### ###
+ggsave("outputs/fig1_allbirds.png", fig1_allbirds, 
+       width = 25, height = 20, units = "cm", dpi = 300)
 
 
-### Visualising results: (Fig5) Analysis 2: inv-feeders ####
+### Fig 2: inv-feeders ####
 
 
 ## Difference between DOM layers ##
@@ -391,7 +383,7 @@ ggsave("Fig5.png", fig5,
 ### ###
 
 
-### Visualising results: (Fig6) Analysis 2: omnivores ####
+### Fig 3: omnivores ####
 
 
 ## Difference between HabClass layers ##
@@ -575,7 +567,7 @@ ggsave("Fig6.png", fig6,
 ### ###
 
 
-### Visualising results: secondary graphs ####
+### secondary graphs ####
 
 ### Fig.3: average bird detections per point count over the weeks and points ###
 
