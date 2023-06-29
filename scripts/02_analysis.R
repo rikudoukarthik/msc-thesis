@@ -84,8 +84,8 @@ summary(all0)
 all0sim <- simulateResiduals(all0)
 plot(all0sim)
 
-all0NB <- glmer.nb(Point_Abun ~ Observer + (1|Point) + (1|Days), 
-                   data = m_all, control = glmerControl(optimizer = "bobyqa"))
+all0NB <- glmmTMB(Point_Abun ~ Observer + (1|Point) + (1|Days),
+                  data = m_all, family = nbinom2)
 all0NBsim <- simulateResiduals(all0NB)
 plot(all0NBsim)
 
@@ -117,7 +117,7 @@ summary(all1)
 # testing nuisance variables like time of count during day 
 a <- update(all1, . ~ . + CoD)
 b <- update(all1, . ~ . + poly(CoD, 2))
-anova(all1, a) 
+# anova(all1, a) 
 AICctab(all1, a, b)
 # neither linear nor poly significant
 c <- update(all1, . ~ . + Weather)
@@ -205,6 +205,7 @@ summary(all4)
 hist(resid(all4)) 
 simres <- simulateResiduals(all4, plot = T, n = 1000) # beautiful :)
 testDispersion(simres) 
+testZeroInflation(simres) 
 
 hist(simres) # uniform as should be
 plotResiduals(simres, form = m_all$Week)
