@@ -164,7 +164,9 @@ habvar <- readxl::read_xlsx("data/data_HabVar_2021Feb26.xlsx", "Point Descriptio
   mutate(DOM = case_when(DOM == "0" ~ "Bare",
                          DOM == "Carex" ~ "Graminoid",
                          TRUE ~ DOM)) %>% 
-  mutate(DOM = factor(DOM, levels = c("Bare", "Graminoid", "Moss", "Rubus", "Vaccinium")))
+  mutate(DOM = factor(DOM, levels = c("Bare", "Graminoid", "Moss", "Rubus", "Vaccinium")),
+         Moss = factor(Moss),
+         HabClass = factor(HabClass, levels = c("Edge", "Road", "Interior")))
 
 
 
