@@ -192,6 +192,10 @@ f <- update(a, .~. + Week:logTDens - logCH:logTDens)
 g <- update(a, .~. + Week:logCH + Week:logTDens - logCH:logTDens)
 AICctab(all3, a, b, c, d, e, f, g)
 # interaction is poor
+h <- update(a, .~. + Week:DOM)
+i <- update(a, .~. + Week:DOM - logCH:logTDens)
+j <- update(a, .~. + Week:DOM - logCH*logTDens)
+AICctab(all3, a, h, i, j)
 
 
 all4 <- a

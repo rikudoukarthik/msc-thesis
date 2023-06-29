@@ -15,12 +15,14 @@ source("scripts/functions.R")
 
 ### setting theme
 
-theme_simple <- theme_classic()
-theme_set(theme_simple)
+theme_set(theme_classic())
 
 # purples: #A204B4 #D91EFA
 cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", 
                 "#F0E442", "#0072A2", "#D55E00", "#CC79A7")
+cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", 
+                "#F0E442", "#0072A2", "#D55E00", "#CC79A7")
+# c("#d8b365", "#f5f5f5", "#5ab4ac")
 Set1 <- brewer.pal(9, name = "Set1")
 Set3 <- brewer.pal(12, name = "Set3")
 
@@ -150,10 +152,10 @@ write.csv(birds_speclist_overall, file = "outputs/specieslist_overall.csv", row.
 
 ### Figure 1: all birds ####
 
-## Week-DOM interaction ##
+## Week & DOM main effects ##
 
 # empty table to predict
-pred_data1 <- data.frame(Week = seq(1, 13, 1)) %>% 
+pred_data1 <- data.frame(Week = 1:13) %>% 
   group_by(Week) %>% 
   # need to predict for all five DOM categories at each time-step
   reframe(DOM = unique(m_all$DOM)) %>% 
@@ -163,7 +165,7 @@ pred_data1 <- data.frame(Week = seq(1, 13, 1)) %>%
          logTDens = mean(m_all$logTDens))
 
 # predictions
-tic("Bootstrapped predictions for all-birds model")
+tic("Bootstrapped prediction 1 for all-birds model")
 prediction <- boot_conf_GLMM(all4,
                              new_data = pred_data1,
                              new_data_string = "pred_data1",
@@ -189,38 +191,25 @@ pred_data1 <- pred_data1 %>%
          CI.L = PRED - Gauss_coeff*SE) %>% 
   dplyr::select(Week, DOM, PRED, CI.L, CI.U)
 
-
-# plotting
+# plotting Week & DOM main effects
 plot1 <- ggplot(pred_data1,
                 aes(x = Week, y = PRED, col = DOM, fill = DOM)) +
   scale_fill_manual(values = cbbPalette) +
   scale_colour_manual(values = cbbPalette) +
-  geom_point(size = 2, position = position_dodge(0.65)) +
-  geom_errorbar(aes(ymin = CI.L, ymax = CI.U),
-                size = 1, width = 0.6, position = position_dodge(0.65)) +
-  # geom_line(linewidth = 2) +
-  # geom_ribbon(aes(ymin = CI.L, ymax = CI.U), alpha = 0.3, colour = NA) +
+  geom_point(size = 2, position = position_dodge(0.5)) +
+  geom_line(linewidth = 1.5, position = position_dodge(0.5)) +
+  geom_ribbon(aes(ymin = CI.L, ymax = CI.U), 
+              alpha = 0.35, colour = NA, position = position_dodge(0.5)) +
   scale_y_continuous(breaks = seq(0, 40, 4)) +
-  scale_x_continuous(breaks = seq(1, 13, 1)) +
+  scale_x_continuous(breaks = 1:13) +
   coord_cartesian(ylim = c(2, 18)) +
   labs(y = "Bird detections per point count") +
-  guides(col = guide_legend(title = "Ground veg."),
-         fill = guide_legend(title = "Ground veg."))
-
-
-# Difference between DOM layers 
-plot2 <- ggplot(pred_data1 %>% filter(Week %in% c(1, 13)),
-                aes(x = DOM, y = PRED, col = factor(Week))) +
-  guides(col = guide_legend(title = "Week", reverse = T)) +
-  scale_colour_manual(values = cbbPalette[c(7, 6)]) +
-  geom_point(size = 2, position = position_dodge(0.5)) +
-  geom_errorbar(aes(ymin = CI.L, ymax = CI.U), 
-                size = 1, width = 0.3, position = position_dodge(0.5)) +
-  scale_y_continuous(breaks = seq(0, 40, 4)) +
-  coord_cartesian(ylim = c(2, 30)) +
-  labs(y = "Bird detections per point count",
-       x = "Ground vegetation") +
-  theme(axis.text.x = element_text(size = 7))
+  guides(col = guide_legend(title = "Ground vegetation",
+                            title.position = "top"),
+         fill = guide_legend(title = "Ground vegetation",
+                             title.position = "top")) +
+  theme(legend.position = c(0.4, 0.9), 
+        legend.direction = "horizontal")
 
 
 ## logCH-logTDens interaction ##
@@ -228,23 +217,27 @@ plot2 <- ggplot(pred_data1 %>% filter(Week %in% c(1, 13)),
 temp1 <- data.frame(Week = c(1, 13)) %>% 
   group_by(Week) %>% 
   # need to predict for full range of values at each time-step
-  reframe(logCH = seq(floor(min(m_all$logCH)), 
-                        ceiling(max(m_all$logCH)), 
-                        0.01)) %>% 
+  reframe(logCH = seq(min(m_all$logCH), 
+                      max(m_all$logCH), 
+                      0.01)) %>% 
+  group_by(Week, logCH) %>% 
+  # for visualising interaction between CH and TDens
+  reframe(logTDens = c(min(m_all$logTDens), mean(m_all$logTDens), max(m_all$logTDens))) %>% 
   # other variables at fixed values
-  mutate(logTDens = mean(m_all$logTDens),
-         DOM = factor("Bare", levels = levels(m_all$DOM)),
+  mutate(DOM = factor("Bare", levels = levels(m_all$DOM)),
          Observer = factor("KT", levels = levels(m_all$Observer))) 
 
 temp2 <- data.frame(Week = c(1, 13)) %>% 
   group_by(Week) %>% 
   # need to predict for full range of values at each time-step
-  reframe(logTDens = seq(floor(min(m_all$logTDens)), 
-                           ceiling(max(m_all$logTDens)), 
-                           0.01)) %>% 
+  reframe(logTDens = seq(min(m_all$logTDens), 
+                         max(m_all$logTDens), 
+                         0.01)) %>% 
+  group_by(Week, logTDens) %>% 
+  # for visualising interaction between CH and TDens
+  reframe(logCH = c(min(m_all$logCH), mean(m_all$logCH), max(m_all$logCH))) %>% 
   # other variables at fixed values
-  mutate(logCH = mean(m_all$logCH),
-         DOM = factor("Bare", levels = levels(m_all$DOM)),
+  mutate(DOM = factor("Bare", levels = levels(m_all$DOM)),
          Observer = factor("KT", levels = levels(m_all$Observer)))
 
 pred_data2 <- bind_rows(temp1, temp2, .id = "ID")
@@ -256,7 +249,7 @@ prediction <- boot_conf_GLMM(all4,
                              new_data_string = "pred_data2",
                              nsim = 1000)
 save(prediction, file = "outputs/pred2.RData")
-toc() # 65 min
+toc() # 42 min
 # load("outputs/pred2.RData")
 
 # calculating mean and SE from bootstrapped values
@@ -274,53 +267,89 @@ pred_data2 <- pred_data2 %>%
   mutate(SE = PRED - SE.L) %>% 
   mutate(CI.U = PRED + Gauss_coeff*SE,
          CI.L = PRED - Gauss_coeff*SE) %>% 
-  dplyr::select(ID, Week, logCH, logTDens, PRED, CI.L, CI.U)
+  dplyr::select(ID, Week, logCH, logTDens, PRED, CI.L, CI.U) %>% 
+  filter(Week == 13) %>% 
+  group_by(logCH) %>% 
+  # to plot three levels of one variable separately
+  mutate(TYPE = case_when(ID == 1 & logTDens == min(m_all$logTDens) ~ min(m_all$logTDens),
+                          ID == 1 & logTDens == mean(m_all$logTDens) ~ mean(m_all$logTDens),
+                          ID == 1 & logTDens == max(m_all$logTDens) ~ max(m_all$logTDens),
+                          ID == 2 & logCH == min(m_all$logCH) ~ min(m_all$logCH),
+                          ID == 2 & logCH == mean(m_all$logCH) ~ mean(m_all$logCH),
+                          ID == 2 & logCH == max(m_all$logCH) ~ max(m_all$logCH)),
+         TYPE.LABEL = case_when(ID == 1 & logTDens == min(m_all$logTDens) ~ "min",
+                                ID == 1 & logTDens == mean(m_all$logTDens) ~ "mean",
+                                ID == 1 & logTDens == max(m_all$logTDens) ~ "max",
+                                ID == 2 & logCH == min(m_all$logCH) ~ "min",
+                                ID == 2 & logCH == mean(m_all$logCH) ~ "mean",
+                                ID == 2 & logCH == max(m_all$logCH) ~ "max")) %>% 
+  mutate(CH = exp(logCH),
+         TDens = exp(logTDens),
+         TYPE = exp(TYPE) %>% round(2) %>% factor(),
+         TYPE.LABEL = factor(TYPE.LABEL, levels = c("min", "mean", "max"))) %>% 
+  ungroup()
 
 
-plot3 <- ggplot(pred_data2 %>% filter(ID == 1),
-                aes(x = logCH, y = PRED, col = factor(Week), fill = factor(Week))) +
-  scale_fill_manual(values = cbbPalette[c(7, 6)]) +
-  scale_colour_manual(values = cbbPalette[c(7, 6)]) +
-  geom_line(linewidth = 2) +
-  geom_ribbon(aes(ymin = CI.L, ymax = CI.U), alpha = 0.3, colour = NA) +
-  scale_y_continuous(breaks = seq(0, 40, 4)) +
-  coord_cartesian(ylim = c(2, 30)) +
-  guides(col = guide_legend(title = "Week", reverse = T),
-         fill = guide_legend(title = "Week", reverse = T)) +
+plot2 <- ggplot(pred_data2 %>% filter(ID == 1), 
+                aes(x = CH, y = PRED, col = TYPE.LABEL, fill = TYPE.LABEL)) +
+  scale_fill_manual(values = cbPalette[c(3, 1, 7)]) +
+  scale_colour_manual(values = cbPalette[c(3, 1, 7)]) +
+  geom_line(linewidth = 1.5) +
+  geom_ribbon(aes(ymin = CI.L, ymax = CI.U), alpha = 0.45, colour = NA) +
+  scale_y_continuous(breaks = seq(0, 40, 5)) +
+  guides(col = guide_legend(title = expression(Tree~density~per~100~m^2), 
+                            title.position = "top", reverse = T),
+         fill = guide_legend(title = expression(Tree~density~per~100~m^2), 
+                             title.position = "top", reverse = T)) +
   labs(y = "Bird detections per point count",
-       x = "Canopy heterogeneity") 
+       x = "Canopy heterogeneity") +
+  theme(legend.position = c(0.6, 0.9), 
+        legend.direction = "horizontal")
 
-plot4 <- ggplot(pred_data2 %>% filter(ID == 2),
-                aes(x = logTDens, y = PRED, col = factor(Week), fill = factor(Week))) +
-  scale_fill_manual(values = cbbPalette[c(7, 6)]) +
-  scale_colour_manual(values = cbbPalette[c(7, 6)]) +
-  geom_line(linewidth = 2) +
-  geom_ribbon(aes(ymin = CI.L, ymax = CI.U), alpha = 0.3, colour = NA) +
-  scale_y_continuous(breaks = seq(0, 40, 4)) +
-  coord_cartesian(ylim = c(2, 30)) +
-  guides(col = guide_legend(title = "Week", reverse = T),
-         fill = guide_legend(title = "Week", reverse = T)) +
+plot3 <- ggplot(pred_data2 %>% filter(ID == 2), 
+                aes(x = TDens, y = PRED, col = TYPE.LABEL, fill = TYPE.LABEL)) +
+  scale_fill_manual(values = cbPalette[c(3, 1, 7)]) +
+  scale_colour_manual(values = cbPalette[c(3, 1, 7)]) +
+  geom_line(linewidth = 1.5) +
+  geom_ribbon(aes(ymin = CI.L, ymax = CI.U), alpha = 0.45, colour = NA) +
+  scale_y_continuous(breaks = seq(0, 40, 5)) +
+  scale_x_continuous(breaks = seq(2, 42, 4)) +
+  guides(col = guide_legend(title = "Canopy heterogeneity", 
+                            title.position = "top", reverse = T),
+         fill = guide_legend(title = "Canopy heterogeneity", 
+                             title.position = "top", reverse = T)) +
   labs(y = "Bird detections per point count",
-       x = "Tree density") 
+       x = expression(Tree~density~per~100~m^2)) +
+  theme(legend.position = c(0.6, 0.9), 
+        legend.direction = "horizontal")
 
 
 ## Figure 1 ##
 
 fig_layout <- "
 AAAAAA
-BBCCDD
+AAAAAA
+AAAAAA
+CCCDDD
+CCCDDD
 "
 
-fig1_allbirds <- plot1 + 
-  plot2 + 
-  (plot3 + theme(axis.title.y = element_blank())) + 
-  (plot4 + theme(axis.title.y = element_blank())) +
-  plot_layout(design = fig_layout, guides = "collect")  +
-  plot_annotation(tag_levels = "A") & theme(plot.tag = element_text(size = 16)) 
+fig1_allbirds <- plot1 + plot2 + 
+  (plot3 + theme(axis.title.y = element_blank())) +
+  plot_layout(design = fig_layout)  +
+  plot_annotation(tag_levels = "A") & 
+  theme(plot.tag = element_text(size = 16, margin = margin(0, 7, 0, 0)),
+        plot.margin = margin(10, 10, 10, 10),
+        legend.text = element_text(size = 11),
+        legend.title = element_text(size = 13),
+        axis.text = element_text(size = 11),
+        axis.title.y = element_text(size = 13, vjust = 3),
+        axis.title.x = element_text(size = 13, vjust = -0.75)) 
 
 ggsave("outputs/fig1_allbirds.png", fig1_allbirds, 
-       width = 25, height = 20, units = "cm", dpi = 300)
+       width = 26, height = 25, units = "cm", dpi = 300)
 
+#
 
 ### Fig 2: inv-feeders ####
 
