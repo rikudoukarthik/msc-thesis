@@ -373,12 +373,11 @@ m_guild_inv <- m_guild %>% filter(GuildFeed == "Invertebrate")
 # empty table to predict
 pred_data3 <- data.frame(Week = 1:13) %>% 
   group_by(Week) %>% 
-  # need to predict for all five DOM categories at each time-step
-  reframe(Moss = unique(m_all$Moss)) %>% 
+  reframe(Moss = unique(m_guild_inv$Moss)) %>% 
   # other variables at fixed values
-  mutate(Observer = factor("KT", levels = levels(m_all$Observer)),
+  mutate(Observer = factor("KT", levels = levels(m_guild_inv$Observer)),
          CoD = 5, # somewhat intermediate, but also one of the higher-bird-activity periods
-         DOM = factor("Moss", levels = levels(m_all$DOM)),
+         DOM = factor("Moss", levels = levels(m_guild_inv$DOM)),
          Point = NA)
 
 # predictions
@@ -431,13 +430,13 @@ plot_inv1 <- ggplot(pred_data3,
 ## DOM main effect ##
 
 # empty table to predict
-pred_data4 <- data.frame(DOM = unique(m_all$DOM)) %>% 
+pred_data4 <- data.frame(DOM = unique(m_guild_inv$DOM)) %>% 
   group_by(DOM) %>% 
   # we need one, but just to investigate relationship between DOM-Moss and Moss
   # can later filter for Moss == 0
-  reframe(Moss = unique(m_all$Moss)) %>% 
+  reframe(Moss = unique(m_guild_inv$Moss)) %>% 
   # other variables at fixed values
-  mutate(Observer = factor("KT", levels = levels(m_all$Observer)),
+  mutate(Observer = factor("KT", levels = levels(m_guild_inv$Observer)),
          CoD = 5, # somewhat intermediate, but also one of the higher-bird-activity periods
          Week = 13,
          Point = NA)
@@ -503,9 +502,24 @@ ggsave("outputs/fig2_invbirds.png", fig2_invbirds,
 ### ###
 
 
-### Fig 3: omnivores ####
+### Figure 3: omnivores ####
+
+summary(omn3)
 
 m_guild_omn <- m_guild %>% filter(GuildFeed == "Omnivore")
+
+
+## logCH:Week interaction ##
+
+# empty table to predict
+pred_data3 <- data.frame(Week = 1:13) %>% 
+  group_by(Week) %>% 
+  reframe(logCH = unique(m_guild_omn$Moss)) %>% 
+  mutate(Observer = factor("KT", levels = levels(m_all$Observer)),
+         CoD = 5, # somewhat intermediate, but also one of the higher-bird-activity periods
+         DOM = factor("Moss", levels = levels(m_all$DOM)),
+         Point = NA)
+
 
 ## Difference between HabClass layers ##
 # Week 1
