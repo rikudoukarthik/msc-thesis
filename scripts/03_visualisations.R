@@ -359,71 +359,153 @@ fig1_allbirds <- plot1 + plot2 +
 ggsave("outputs/fig1_allbirds.png", fig1_allbirds, 
        width = 26, height = 25, units = "cm", dpi = 300)
 
-#
 
-### Fig 2: inv-feeders ####
+tic.log()
+
+### Figure 2: inv-feeders ####
+
+summary(inv3)
+
+m_guild_inv <- m_guild %>% filter(GuildFeed == "Invertebrate")
+
+## Moss:Week interaction ##
+
+# empty table to predict
+pred_data3 <- data.frame(Week = 1:13) %>% 
+  group_by(Week) %>% 
+  # need to predict for all five DOM categories at each time-step
+  reframe(Moss = unique(m_all$Moss)) %>% 
+  # other variables at fixed values
+  mutate(Observer = factor("KT", levels = levels(m_all$Observer)),
+         CoD = 5, # somewhat intermediate, but also one of the higher-bird-activity periods
+         DOM = factor("Moss", levels = levels(m_all$DOM)),
+         Point = NA)
+
+# predictions
+tic("Bootstrapped prediction 1 for inv. model")
+prediction <- boot_conf_GLMM(inv3,
+                             new_data = pred_data3,
+                             new_data_string = "pred_data3",
+                             model_data_string = "m_guild_inv",
+                             nsim = 1000)
+save(prediction, file = "outputs/pred3.RData")
+toc() # 
+# load("outputs/pred3.RData")
+
+# calculating mean and SE from bootstrapped values
+for (j in 1:nrow(pred_data3)) {
+  
+  pred_data3$PRED.LINK[j] <- median(na.omit(prediction[,j]))
+  pred_data3$SE.LINK[j] <- sd(na.omit(prediction[,j]))
+  
+}
+
+pred_data3 <- pred_data3 %>% 
+  mutate(PRED = exp(PRED.LINK),
+         # to transform lower bound of SE (not CI.L! think "mean +- SE")
+         SE.L = exp(PRED.LINK - SE.LINK)) %>% 
+  mutate(SE = PRED - SE.L) %>% 
+  mutate(CI.U = PRED + Gauss_coeff*SE,
+         CI.L = PRED - Gauss_coeff*SE) %>% 
+  dplyr::select(Week, Moss, PRED, CI.L, CI.U)
 
 
-## Difference between DOM layers ##
-inv.pred1 <- data.frame(DOM = sample(unique(m_data_A1_inv$DOM), 1201, replace = T),
-                        Observer = factor("KT", levels = levels(m_data_A1_inv$Observer)),
-                        TPDscaled = mean(m_data_A1_inv$TPDscaled),
-                        Point = sample(unique(m_data_A1_inv$Point), 1201, replace = T))
-inv.pred1$GuildAbun <- predict(inv.4, inv.pred1, type="response", re.form=NA)
-# don't know why it requires to specify Point even with re.form=NA
-inv.pred1mm <- model.matrix(terms(inv.4), inv.pred1)
-inv.pred1var <- diag(inv.pred1mm %*% vcov(inv.4)[["cond"]] %*% t(inv.pred1mm))
-inv.pred1 <- data.frame(inv.pred1,
-                        lo = inv.pred1$GuildAbun - exp(cmult*sqrt(inv.pred1var)),
-                        hi = inv.pred1$GuildAbun + exp(cmult*sqrt(inv.pred1var)))
-# plotting
-inv.pred1plot <- ggplot(data=inv.pred1, mapping=aes(x=DOM, y=GuildAbun)) +
-  geom_point(size=3.5, col="#655B1B") +
-  geom_errorbar(aes(ymin = lo, ymax = hi), width = 0.2, size = 1.5, col="#655B1B") +
-  scale_y_continuous(breaks = seq(0,40,2)) +
-  scale_x_discrete(labels = c("Bare","Graminoid","Moss","Rubus","Vaccinium")) +
-  coord_cartesian(ylim = c(0,10)) +
+plot_inv1 <- ggplot(pred_data3,
+                    aes(x = Week, y = PRED, col = Moss, fill = Moss)) +
+  scale_fill_manual(values = custom_pal[c(1, 3)], 
+                    name = "Presence of\nmoss layer", labels = c("No", "Yes")) +
+  scale_colour_manual(values = custom_pal[c(1, 3)], 
+                      name = "Presence of\nmoss layer", labels = c("No", "Yes")) +
+  geom_line(linewidth = 1.5) +
+  geom_ribbon(aes(ymin = CI.L, ymax = CI.U), alpha = 0.35, colour = NA) +
+  scale_y_continuous(breaks = seq(0, 40, 2)) +
+  scale_x_continuous(breaks = 1:13) +
+  # coord_cartesian(ylim = c(2, 18)) +
+  labs(y = "Invertebrate-feeder detections per point count") +
+  guides(col = guide_legend(title.position = "top"),
+         fill = guide_legend(title.position = "top")) +
+  theme(legend.position = c(0.7, 0.9), 
+        legend.direction = "horizontal")
+
+
+## DOM main effect ##
+
+# empty table to predict
+pred_data4 <- data.frame(DOM = unique(m_all$DOM)) %>% 
+  group_by(DOM) %>% 
+  # we need one, but just to investigate relationship between DOM-Moss and Moss
+  # can later filter for Moss == 0
+  reframe(Moss = unique(m_all$Moss)) %>% 
+  # other variables at fixed values
+  mutate(Observer = factor("KT", levels = levels(m_all$Observer)),
+         CoD = 5, # somewhat intermediate, but also one of the higher-bird-activity periods
+         Week = 13,
+         Point = NA)
+
+# predictions
+tic("Bootstrapped prediction 2 for inv. model")
+prediction <- boot_conf_GLMM(inv3,
+                             new_data = pred_data4,
+                             new_data_string = "pred_data4",
+                             model_data_string = "m_guild_inv",
+                             nsim = 1000)
+save(prediction, file = "outputs/pred4.RData")
+toc() # 
+# load("outputs/pred4.RData")
+
+# calculating mean and SE from bootstrapped values
+for (j in 1:nrow(pred_data4)) {
+  
+  pred_data4$PRED.LINK[j] <- median(na.omit(prediction[,j]))
+  pred_data4$SE.LINK[j] <- sd(na.omit(prediction[,j]))
+  
+}
+
+pred_data4 <- pred_data4 %>% 
+  mutate(PRED = exp(PRED.LINK),
+         # to transform lower bound of SE (not CI.L! think "mean +- SE")
+         SE.L = exp(PRED.LINK - SE.LINK)) %>% 
+  mutate(SE = PRED - SE.L) %>% 
+  mutate(CI.U = PRED + Gauss_coeff*SE,
+         CI.L = PRED - Gauss_coeff*SE) %>% 
+  filter(Moss == 0) %>% 
+  dplyr::select(DOM, PRED, CI.L, CI.U)
+
+
+plot_inv2 <- ggplot(pred_data4,
+                    aes(x = DOM, y = PRED)) +
+  scale_colour_manual(values = custom_pal[3]) +
+  geom_point(size = 2) +
+  geom_errorbar(aes(ymin = CI.L, ymax = CI.U), 
+                linewidth = 1, width = 0.6) +
+  scale_y_continuous(breaks = seq(0, 40, 1), limits = c(1, 4)) +
   labs(y = "Invertebrate-feeder detections per point count",
-       x = "Ground vegetation") +
-  theme(axis.text.x = element_text(size=7))
+       x = "Ground vegetation") 
 
 
-## Abun - TPDscaled (for 0 DOM ground layer) ##
-inv.pred2 <- data.frame(DOM = factor("0", levels = levels(m_data_A1_inv$DOM)),
-                        Observer = factor("KT", levels = levels(m_data_A1_inv$Observer)),
-                        TPDscaled = seq(-1.5,1.5,0.001),
-                        Point = sample(unique(m_data_A1_inv$Point), 3001, replace = T))
-inv.pred2$GuildAbun <- predict(inv.4, inv.pred2, type="response", re.form=NA)
-inv.pred2mm <- model.matrix(terms(inv.4), inv.pred2)
-inv.pred2var <- diag(inv.pred2mm %*% vcov(inv.4)[["cond"]] %*% t(inv.pred2mm))
-inv.pred2 <- data.frame(inv.pred2,
-                        lo = inv.pred2$GuildAbun - exp(cmult*sqrt(inv.pred2var)),
-                        hi = inv.pred2$GuildAbun + exp(cmult*sqrt(inv.pred2var)))
-# plotting
-inv.pred2plot <- ggplot(data=inv.pred2, mapping=aes(x=TPDscaled, y=GuildAbun)) +
-  geom_line(size=1.5, col="#655B1B") +
-  geom_ribbon(aes(ymin=lo, ymax=hi), col=NA, alpha=0.3, fill="#655B1B") +
-  scale_y_continuous(breaks = seq(0,40,2)) +
-  coord_cartesian(ylim=c(0,10)) +
-  labs(y = "Invertebrate-feeder detections per point count",
-       x = "Proportion of deciduous trees (scaled)") 
+## Figure 2 ##
 
+fig2_invbirds <- plot_inv1 + 
+  (plot_inv2 + theme(axis.title.y = element_blank())) +
+  plot_layout(nrow = 1, widths = c(2, 1)) +
+  plot_annotation(tag_levels = "A") & 
+  theme(plot.tag = element_text(size = 16, margin = margin(0, 7, 0, 0)),
+        plot.margin = margin(10, 10, 10, 10),
+        legend.text = element_text(size = 11),
+        legend.title = element_text(size = 13),
+        axis.text = element_text(size = 11),
+        axis.title.y = element_text(size = 13, vjust = 3),
+        axis.title.x = element_text(size = 13, vjust = -0.75)) 
 
-## fig5 ##
-
-fig5 <- inv.pred1plot + (inv.pred2plot + theme(axis.title.y = element_blank())) +
-  plot_annotation(tag_levels = "A") & theme(plot.tag = element_text(size = 16),
-                                            plot.tag.position = c(0,1)) 
-
-ggsave("Fig5.png", fig5, 
-       width = 18, height = 16, units = "cm", dpi=300)
-
+ggsave("outputs/fig2_invbirds.png", fig2_invbirds, 
+       width = 30, height = 20, units = "cm", dpi = 300)
 
 ### ###
 
 
 ### Fig 3: omnivores ####
 
+m_guild_omn <- m_guild %>% filter(GuildFeed == "Omnivore")
 
 ## Difference between HabClass layers ##
 # Week 1
