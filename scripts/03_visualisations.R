@@ -512,194 +512,108 @@ m_guild_omn <- m_guild %>% filter(GuildFeed == "Omnivore")
 ## logCH:Week interaction ##
 
 # empty table to predict
-pred_data3 <- data.frame(Week = 1:13) %>% 
+pred_data5 <- data.frame(Week = c(1, 7, 13)) %>% 
   group_by(Week) %>% 
-  reframe(logCH = unique(m_guild_omn$Moss)) %>% 
-  mutate(Observer = factor("KT", levels = levels(m_all$Observer)),
-         CoD = 5, # somewhat intermediate, but also one of the higher-bird-activity periods
-         DOM = factor("Moss", levels = levels(m_all$DOM)),
+  reframe(logCH = seq(min(m_guild_omn$logCH), 
+                      max(m_guild_omn$logCH), 
+                      0.01)) %>% 
+  mutate(Observer = factor("KT", levels = levels(m_guild_omn$Observer)),
+         HabClass = factor("Road", levels = levels(m_guild_omn$HabClass)), # intermediate values
+         logTDens = mean(m_guild_omn$logTDens),
          Point = NA)
 
+# predictions
+tic("Bootstrapped prediction 1 for omn. model")
+prediction <- boot_conf_GLMM(omn3,
+                             new_data = pred_data5,
+                             new_data_string = "pred_data5",
+                             model_data_string = "m_guild_omn",
+                             nsim = 1000)
+save(prediction, file = "outputs/pred5.RData")
+toc() # 690 sec
+# load("outputs/pred5.RData")
 
-## Difference between HabClass layers ##
-# Week 1
-omn.pred1a <- data.frame(Week = 1,
-                         HabClass = sample(unique(m_data_A1_omn$HabClass), 1201, replace = T),
-                         Observer = factor("KT", levels = levels(m_data_A1_omn$Observer)),
-                         TreeDens = mean(m_data_A1_omn$TreeDens),
-                         CCavgsd = mean(m_data_A1_omn$CCavgsd),
-                         Point = sample(unique(m_data_A1_omn$Point), 1201, replace = T))
-omn.pred1a$GuildAbun <- predict(omn.4, omn.pred1a, type="response", re.form=NA)
-# don't know why it requires to specify Point even with re.form=NA
-omn.pred1amm <- model.matrix(terms(omn.4), omn.pred1a)
-omn.pred1avar <- diag(omn.pred1amm %*% vcov(omn.4)[["cond"]] %*% t(omn.pred1amm))
-omn.pred1a <- data.frame(omn.pred1a,
-                         lo = omn.pred1a$GuildAbun - exp(cmult*sqrt(omn.pred1avar)),
-                         hi = omn.pred1a$GuildAbun + exp(cmult*sqrt(omn.pred1avar)))
-# Week 13
-omn.pred1b <- data.frame(Week = 13,
-                         HabClass = sample(unique(m_data_A1_omn$HabClass), 1201, replace = T),
-                         Observer = factor("KT", levels = levels(m_data_A1_omn$Observer)),
-                         TreeDens = mean(m_data_A1_omn$TreeDens),
-                         CCavgsd = mean(m_data_A1_omn$CCavgsd),
-                         Point = sample(unique(m_data_A1_omn$Point), 1201, replace = T))
-omn.pred1b$GuildAbun <- predict(omn.4, omn.pred1b, type="response", re.form=NA)
-omn.pred1bmm <- model.matrix(terms(omn.4), omn.pred1b)
-omn.pred1bvar <- diag(omn.pred1bmm %*% vcov(omn.4)[["cond"]] %*% t(omn.pred1bmm))
-omn.pred1b <- data.frame(omn.pred1b,
-                         lo = omn.pred1b$GuildAbun - exp(cmult*sqrt(omn.pred1bvar)),
-                         hi = omn.pred1b$GuildAbun + exp(cmult*sqrt(omn.pred1bvar)))
-# joining
-omn.pred1 <- rbind(omn.pred1a, omn.pred1b)
-# plotting
-omn.pred1plot <- ggplot(data=omn.pred1, 
-                        mapping=aes(x=HabClass, y=GuildAbun, col=factor(Week))) +
-  guides(col = guide_legend(title = "Week", reverse = T)) +
-  scale_colour_manual(values = cbbPalette[c(7, 6)]) +
-  stat_summary(fun = "mean", geom = "point", size = 3.5) +
-  geom_errorbar(aes(ymin = lo, ymax = hi), width = 0.2, size = 1.5) +
-  scale_y_continuous(breaks = seq(0,40,2)) +
-  coord_cartesian(ylim = c(0,16)) +
+# calculating mean and SE from bootstrapped values
+for (j in 1:nrow(pred_data5)) {
+  
+  pred_data5$PRED.LINK[j] <- median(na.omit(prediction[,j]))
+  pred_data5$SE.LINK[j] <- sd(na.omit(prediction[,j]))
+  
+}
+
+pred_data5 <- pred_data5 %>% 
+  mutate(PRED = exp(PRED.LINK),
+         # to transform lower bound of SE (not CI.L! think "mean +- SE")
+         SE.L = exp(PRED.LINK - SE.LINK)) %>% 
+  mutate(SE = PRED - SE.L) %>% 
+  mutate(CI.U = PRED + Gauss_coeff*SE,
+         CI.L = PRED - Gauss_coeff*SE) %>% 
+  dplyr::select(Week, logCH, PRED, CI.L, CI.U)
+
+
+plot_omn1 <- ggplot(pred_data5,
+                    aes(x = logCH, y = PRED, 
+                        col = as.factor(Week), fill = as.factor(Week))) +
+  scale_fill_manual(values = cbPalette[c(3, 1, 7)], name = "Week") +
+  scale_colour_manual(values = cbPalette[c(3, 1, 7)], name = "Week") +
+  geom_line(linewidth = 1.5) +
+  geom_ribbon(aes(ymin = CI.L, ymax = CI.U), alpha = 0.35, colour = NA) +
+  scale_y_continuous(breaks = seq(0, 40, 4)) +
   labs(y = "Omnivore detections per point count",
-       x = "Habitat class") +
-  theme(axis.text.x = element_text(size=8))
+       x = "Canopy heterogeneity") +
+  guides(col = guide_legend(title.position = "top"),
+         fill = guide_legend(title.position = "top")) +
+  theme(legend.position = c(0.4, 0.9), 
+        legend.direction = "horizontal")
 
 
-## Abun - TreeDens (for Edge) ##
-# Week 1
-omn.pred2a <- data.frame(Week = 1,
-                         HabClass = factor("Edge", levels=levels(m_data_A1_omn$HabClass)),
-                         Observer = factor("KT", levels = levels(m_data_A1_omn$Observer)),
-                         TreeDens = seq(1,15,0.01),
-                         CCavgsd = mean(m_data_A1_omn$CCavgsd),
-                         Point = sample(unique(m_data_A1_omn$Point), 1401, replace = T))
-omn.pred2a$GuildAbun <- predict(omn.4, omn.pred2a, type="response", re.form=NA)
-omn.pred2amm <- model.matrix(terms(omn.4), omn.pred2a)
-omn.pred2avar <- diag(omn.pred2amm %*% vcov(omn.4)[["cond"]] %*% t(omn.pred2amm))
-omn.pred2a <- data.frame(omn.pred2a,
-                         lo = omn.pred2a$GuildAbun - exp(cmult*sqrt(omn.pred2avar)),
-                         hi = omn.pred2a$GuildAbun + exp(cmult*sqrt(omn.pred2avar)))
-# Week 7
-omn.pred2b <- data.frame(Week = 7,
-                         HabClass = factor("Edge", levels=levels(m_data_A1_omn$HabClass)),
-                         Observer = factor("KT", levels = levels(m_data_A1_omn$Observer)),
-                         TreeDens = seq(1,15,0.01),
-                         CCavgsd = mean(m_data_A1_omn$CCavgsd),
-                         Point = sample(unique(m_data_A1_omn$Point), 1401, replace = T))
-omn.pred2b$GuildAbun <- predict(omn.4, omn.pred2b, type="response", re.form=NA)
-omn.pred2bmm <- model.matrix(terms(omn.4), omn.pred2b)
-omn.pred2bvar <- diag(omn.pred2bmm %*% vcov(omn.4)[["cond"]] %*% t(omn.pred2bmm))
-omn.pred2b <- data.frame(omn.pred2b,
-                         lo = omn.pred2b$GuildAbun - exp(cmult*sqrt(omn.pred2bvar)),
-                         hi = omn.pred2b$GuildAbun + exp(cmult*sqrt(omn.pred2bvar)))
-# Week 13
-omn.pred2c <- data.frame(Week = 13,
-                         HabClass = factor("Edge", levels=levels(m_data_A1_omn$HabClass)),
-                         Observer = factor("KT", levels = levels(m_data_A1_omn$Observer)),
-                         TreeDens = seq(1,15,0.01),
-                         CCavgsd = mean(m_data_A1_omn$CCavgsd),
-                         Point = sample(unique(m_data_A1_omn$Point), 1401, replace = T))
-omn.pred2c$GuildAbun <- predict(omn.4, omn.pred2c, type="response", re.form=NA)
-omn.pred2cmm <- model.matrix(terms(omn.4), omn.pred2c)
-omn.pred2cvar <- diag(omn.pred2cmm %*% vcov(omn.4)[["cond"]] %*% t(omn.pred2cmm))
-omn.pred2c <- data.frame(omn.pred2c,
-                         lo = omn.pred2c$GuildAbun - exp(cmult*sqrt(omn.pred2cvar)),
-                         hi = omn.pred2c$GuildAbun + exp(cmult*sqrt(omn.pred2cvar)))
-# joining
-omn.pred2 <- rbind(omn.pred2a,omn.pred2b,omn.pred2c)
-# plotting
-omn.pred2plot <- ggplot(data=omn.pred2, mapping=aes(x=TreeDens, y=GuildAbun,
-                                                    col=factor(Week), fill=factor(Week))) +
-  guides(col=guide_legend(title = "Week", reverse = T),
-         fill=guide_legend(title = "Week", reverse = T)) +
-  scale_colour_manual(values = cbbPalette[c(7, 8, 6)]) +
-  scale_fill_manual(values = cbbPalette[c(7, 8, 6)]) +
-  geom_line(size=1.5) +
-  geom_ribbon(aes(ymin=lo, ymax=hi), col=NA, alpha=0.3) +
-  scale_y_continuous(breaks = seq(0,40,2)) +
-  scale_x_continuous(breaks = seq(0,20,2)) +
-  coord_cartesian(ylim = c(0,16)) +
-  labs(y = "Omnivore detections per point count",
-       x = expression(Tree~density~per~100~m^2)) 
+## logTDens main effect ##
+
+pred_data6 <- data.frame(logTDens = seq(min(m_guild_omn$logTDens), 
+                                        max(m_guild_omn$logTDens), 
+                                        0.01)) %>% 
+  mutate(Observer = factor("KT", levels = levels(m_guild_omn$Observer)),
+         Week = 13,
+         HabClass = factor("Road", levels = levels(m_guild_omn$HabClass)), # intermediate values
+         logCH = mean(m_guild_omn$logCH),
+         Point = NA)
+
+# predictions
+tic("Bootstrapped prediction 2 for omn. model")
+prediction <- boot_conf_GLMM(omn3,
+                             new_data = pred_data6,
+                             new_data_string = "pred_data6",
+                             model_data_string = "m_guild_omn",
+                             nsim = 1000)
+save(prediction, file = "outputs/pred6.RData")
+toc() # 730 sec
+# load("outputs/pred6.RData")
+
+# calculating mean and SE from bootstrapped values
+for (j in 1:nrow(pred_data6)) {
+  
+  pred_data6$PRED.LINK[j] <- median(na.omit(prediction[,j]))
+  pred_data6$SE.LINK[j] <- sd(na.omit(prediction[,j]))
+  
+}
+
+pred_data6 <- pred_data6 %>% 
+  mutate(PRED = exp(PRED.LINK),
+         # to transform lower bound of SE (not CI.L! think "mean +- SE")
+         SE.L = exp(PRED.LINK - SE.LINK)) %>% 
+  mutate(SE = PRED - SE.L) %>% 
+  mutate(CI.U = PRED + Gauss_coeff*SE,
+         CI.L = PRED - Gauss_coeff*SE) %>% 
+  dplyr::select(logTDens, PRED, CI.L, CI.U)
 
 
-
-
-## Abun - CCavgsd (for Edge) ##
-
-# Week 1
-omn.pred3a <- data.frame(Week = 1,
-                         HabClass = factor("Edge", levels=levels(m_data_A1_omn$HabClass)),
-                         Observer = factor("KT", levels = levels(m_data_A1_omn$Observer)),
-                         TreeDens = mean(m_data_A1_omn$TreeDens),
-                         CCavgsd = seq(1,20,0.01),
-                         Point = sample(unique(m_data_A1_omn$Point), 1901, replace = T))
-omn.pred3a$GuildAbun <- predict(omn.4, omn.pred3a, type="response", re.form=NA)
-omn.pred3amm <- model.matrix(terms(omn.4), omn.pred3a)
-omn.pred3avar <- diag(omn.pred3amm %*% vcov(omn.4)[["cond"]] %*% t(omn.pred3amm))
-omn.pred3a <- data.frame(omn.pred3a,
-                         lo = omn.pred3a$GuildAbun - exp(cmult*sqrt(omn.pred3avar)),
-                         hi = omn.pred3a$GuildAbun + exp(cmult*sqrt(omn.pred3avar)))
-# Week 7
-omn.pred3b <- data.frame(Week = 7,
-                         HabClass = factor("Edge", levels=levels(m_data_A1_omn$HabClass)),
-                         Observer = factor("KT", levels = levels(m_data_A1_omn$Observer)),
-                         TreeDens = mean(m_data_A1_omn$TreeDens),
-                         CCavgsd = seq(1,20,0.01),
-                         Point = sample(unique(m_data_A1_omn$Point), 1901, replace = T))
-omn.pred3b$GuildAbun <- predict(omn.4, omn.pred3b, type="response", re.form=NA)
-omn.pred3bmm <- model.matrix(terms(omn.4), omn.pred3b)
-omn.pred3bvar <- diag(omn.pred3bmm %*% vcov(omn.4)[["cond"]] %*% t(omn.pred3bmm))
-omn.pred3b <- data.frame(omn.pred3b,
-                         lo = omn.pred3b$GuildAbun - exp(cmult*sqrt(omn.pred3bvar)),
-                         hi = omn.pred3b$GuildAbun + exp(cmult*sqrt(omn.pred3bvar)))
-# Week 13
-omn.pred3c <- data.frame(Week = 13,
-                         HabClass = factor("Edge", levels=levels(m_data_A1_omn$HabClass)),
-                         Observer = factor("KT", levels = levels(m_data_A1_omn$Observer)),
-                         TreeDens = mean(m_data_A1_omn$TreeDens),
-                         CCavgsd = seq(1,20,0.01),
-                         Point = sample(unique(m_data_A1_omn$Point), 1901, replace = T))
-omn.pred3c$GuildAbun <- predict(omn.4, omn.pred3c, type="response", re.form=NA)
-omn.pred3cmm <- model.matrix(terms(omn.4), omn.pred3c)
-omn.pred3cvar <- diag(omn.pred3cmm %*% vcov(omn.4)[["cond"]] %*% t(omn.pred3cmm))
-omn.pred3c <- data.frame(omn.pred3c,
-                         lo = omn.pred3c$GuildAbun - exp(cmult*sqrt(omn.pred3cvar)),
-                         hi = omn.pred3c$GuildAbun + exp(cmult*sqrt(omn.pred3cvar)))
-# joining
-omn.pred3 <- rbind(omn.pred3a,omn.pred3b,omn.pred3c)
-# plotting
-omn.pred3plot <- ggplot(data=omn.pred3, mapping=aes(x=CCavgsd, y=GuildAbun,
-                                                    col=factor(Week), fill=factor(Week))) +
-  guides(col=guide_legend(title = "Week", reverse = T),
-         fill=guide_legend(title = "Week", reverse = T)) +
-  scale_colour_manual(values = cbbPalette[c(7,8,6)]) +
-  scale_fill_manual(values = cbbPalette[c(7,8,6)]) +
-  geom_line(size=1.5) +
-  geom_ribbon(aes(ymin=lo, ymax=hi), col=NA, alpha=0.3) +
-  scale_y_continuous(breaks = seq(0,40,2)) +
-  scale_x_continuous(breaks = seq(0,20,4)) +
-  coord_cartesian(ylim = c(0,16)) +
-  labs(y = "Omnivore detections per point count",
-       x = "Canopy heterogeneity") 
-
-
-## Fig6 ##
-
-
-fig6 <- omn.pred1plot + 
-  (omn.pred2plot + theme(axis.title.y = element_blank())) +
-  (omn.pred3plot + theme(axis.title.y = element_blank())) +
-  plot_annotation(tag_levels = "A") +
-  plot_layout(guides="collect") & 
-  theme(plot.tag = element_text(size = 16)) 
-
-ggsave("Fig6.png", fig6, 
-       width = 18, height = 16, units = "cm", dpi=300)
-
-
-
-### ###
+plot_omn2 <- ggplot(pred_data6,
+                    aes(x = logTDens, y = PRED)) +
+  geom_line(linewidth = 1.5) +
+  geom_ribbon(aes(ymin = CI.L, ymax = CI.U), alpha = 0.35, colour = NA) +
+  scale_y_continuous(breaks = seq(0, 40, 4), limits = c(4, 16)) +
+  labs(y = "Omnivore detections per point count", 
+       x = expression(Tree~density~per~100~m^2))
 
 
 ### secondary graphs ####
@@ -957,10 +871,74 @@ ggsave("Fig13.png", fig13,
   plot_annotation(tag_levels = "A") & 
   theme(plot.tag = element_text(size = 16),
         legend.text = element_text(face = "italic")) -> figSpAbWe
+## HabClass main effect ##
+
+pred_data7 <- data.frame(HabClass = unique(m_guild_omn$HabClass)) %>% 
+  mutate(Observer = factor("KT", levels = levels(m_guild_omn$Observer)),
+         Week = 13,
+         logCH = mean(m_guild_omn$logCH),
+         logTDens = mean(m_guild_omn$logTDens),
+         Point = NA)
+
+# predictions
+tic("Bootstrapped prediction 3 for omn. model")
+prediction <- boot_conf_GLMM(omn3,
+                             new_data = pred_data7,
+                             new_data_string = "pred_data7",
+                             model_data_string = "m_guild_omn",
+                             nsim = 1000)
+save(prediction, file = "outputs/pred7.RData")
+toc() # 880 sec
+# load("outputs/pred7.RData")
+
+# calculating mean and SE from bootstrapped values
+for (j in 1:nrow(pred_data7)) {
+  
+  pred_data7$PRED.LINK[j] <- median(na.omit(prediction[,j]))
+  pred_data7$SE.LINK[j] <- sd(na.omit(prediction[,j]))
+  
+}
+
+pred_data7 <- pred_data7 %>% 
+  mutate(PRED = exp(PRED.LINK),
+         # to transform lower bound of SE (not CI.L! think "mean +- SE")
+         SE.L = exp(PRED.LINK - SE.LINK)) %>% 
+  mutate(SE = PRED - SE.L) %>% 
+  mutate(CI.U = PRED + Gauss_coeff*SE,
+         CI.L = PRED - Gauss_coeff*SE) %>% 
+  dplyr::select(HabClass, PRED, CI.L, CI.U)
 
 
-ggsave("FigSpAbWe.png", figSpAbWe, 
-       width = 28, height = 18, units = "cm", dpi=300)
+plot_omn3 <- ggplot(pred_data7,
+                    aes(x = HabClass, y = PRED)) +
+  geom_point(size = 2) +
+  geom_errorbar(aes(ymin = CI.L, ymax = CI.U), 
+                linewidth = 1, width = 0.6) +
+  scale_y_continuous(breaks = seq(0, 40, 4), limits = c(4, 16)) +
+  labs(y = "Omnivore detections per point count", x = "Habitat class")
+
+
+## Figure 3 ##
+
+fig_layout <- "
+AAA
+BBC
+"
+
+fig3_omnbirds <- plot_omn1 + plot_omn2 +
+     (plot_omn3 + theme(axis.title.y = element_blank())) +
+  plot_layout(design = fig_layout) +
+  plot_annotation(tag_levels = "A") & 
+  theme(plot.tag = element_text(size = 16, margin = margin(0, 7, 0, 0)),
+        plot.margin = margin(10, 10, 10, 10),
+        legend.text = element_text(size = 11),
+        legend.title = element_text(size = 13),
+        axis.text = element_text(size = 11),
+        axis.title.y = element_text(size = 13, vjust = 3),
+        axis.title.x = element_text(size = 13, vjust = -0.75)) 
+
+ggsave("outputs/fig3_omnbirds.png", fig3_omnbirds, 
+       width = 28, height = 25, units = "cm", dpi = 300)
 
 ### ###
 
