@@ -13,8 +13,8 @@ load("data/02_analysis.RData")
 
 source("scripts/functions.R")
 
-### setting theme
 
+# setting theme
 theme_set(theme_classic())
 
 # purples: #A204B4 #D91EFA
@@ -22,7 +22,7 @@ cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73",
                 "#F0E442", "#0072A2", "#D55E00", "#CC79A7")
 cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", 
                 "#F0E442", "#0072A2", "#D55E00", "#CC79A7")
-# c("#d8b365", "#f5f5f5", "#5ab4ac")
+custom_pal <- c("#d8b365", "#f5f5f5", "#5ab4ac")
 Set1 <- brewer.pal(9, name = "Set1")
 Set3 <- brewer.pal(12, name = "Set3")
 
@@ -152,6 +152,8 @@ write.csv(birds_speclist_overall, file = "outputs/specieslist_overall.csv", row.
 
 ### Figure 1: all birds ####
 
+tic.clearlog()
+
 ## Week & DOM main effects ##
 
 # empty table to predict
@@ -162,16 +164,21 @@ pred_data1 <- data.frame(Week = 1:13) %>%
   # other variables at fixed values
   mutate(Observer = factor("KT", levels = levels(m_all$Observer)),
          logCH = mean(m_all$logCH),
-         logTDens = mean(m_all$logTDens))
+         logTDens = mean(m_all$logTDens),
+         # for predict.glmmTMB which needs empty column of random effects
+         # see https://stackoverflow.com/a/72733566/13000254, https://github.com/glmmTMB/glmmTMB/issues/766
+         Point = NA,
+         Days = NA)
 
 # predictions
 tic("Bootstrapped prediction 1 for all-birds model")
 prediction <- boot_conf_GLMM(all4,
                              new_data = pred_data1,
                              new_data_string = "pred_data1",
+                             model_data_string = "m_all",
                              nsim = 1000)
 save(prediction, file = "outputs/pred1.RData")
-toc() # 43 min
+toc(quiet = TRUE, log = TRUE) 
 # load("outputs/pred1.RData")
 
 # calculating mean and SE from bootstrapped values
@@ -224,7 +231,7 @@ temp1 <- data.frame(Week = c(1, 13)) %>%
   # for visualising interaction between CH and TDens
   reframe(logTDens = c(min(m_all$logTDens), mean(m_all$logTDens), max(m_all$logTDens))) %>% 
   # other variables at fixed values
-  mutate(DOM = factor("Bare", levels = levels(m_all$DOM)),
+  mutate(DOM = factor("Moss", levels = levels(m_all$DOM)), # moss has intermediate values
          Observer = factor("KT", levels = levels(m_all$Observer))) 
 
 temp2 <- data.frame(Week = c(1, 13)) %>% 
@@ -237,19 +244,22 @@ temp2 <- data.frame(Week = c(1, 13)) %>%
   # for visualising interaction between CH and TDens
   reframe(logCH = c(min(m_all$logCH), mean(m_all$logCH), max(m_all$logCH))) %>% 
   # other variables at fixed values
-  mutate(DOM = factor("Bare", levels = levels(m_all$DOM)),
+  mutate(DOM = factor("Moss", levels = levels(m_all$DOM)),
          Observer = factor("KT", levels = levels(m_all$Observer)))
 
-pred_data2 <- bind_rows(temp1, temp2, .id = "ID")
+pred_data2 <- bind_rows(temp1, temp2, .id = "ID") %>% 
+  # for predict.glmmTMB which needs empty column of random effects
+  mutate(Point = NA, Days = NA)
 
 
-tic("Bootstrapped predictions for all-birds model (CH and TDens)")
+tic("Bootstrapped prediction 2 for all-birds model (CH and TDens)")
 prediction <- boot_conf_GLMM(all4,
                              new_data = pred_data2,
                              new_data_string = "pred_data2",
+                             model_data_string = "m_all",
                              nsim = 1000)
 save(prediction, file = "outputs/pred2.RData")
-toc() # 42 min
+toc(quiet = TRUE, log = TRUE) # 43 min
 # load("outputs/pred2.RData")
 
 # calculating mean and SE from bootstrapped values

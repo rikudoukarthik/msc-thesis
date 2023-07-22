@@ -242,12 +242,12 @@ hist(inv0sim)
 
 # adding Week and testing poly
 a <- update(inv0, .~. + Week)
-b <- update(inv0, .~. + poly(Week,2))
+b <- update(inv0, .~. + poly(Week, 2))
 AICctab(inv0, a, b)
 # main effect not significant
 # nuisance variables like CoD and Weather
 c <- update(inv0, .~. + CoD)
-d <- update(inv0, .~. + poly(CoD,2))
+d <- update(inv0, .~. + poly(CoD, 2))
 e <- update(inv0, .~. + Weather)
 AICctab(inv0, c, d, e) # CoD important
 
@@ -265,12 +265,18 @@ d <- update(inv1, .~. + Moss*Week)
 e <- update(inv1, .~. + Moss:Week)
 # CoD is nuisance variable, so will retain (won't test keeping moss and removing CoD)
 AICctab(inv1, b, d, e)
-summary(e)
-f <- update(inv1, .~. + Moss*poly(Week,2))
-g <- update(inv1, .~. + Moss:poly(Week,2))
-AICctab(inv1, e, f, g)
+f <- update(inv1, .~. + Moss*poly(Week, 2))
+g <- update(inv1, .~. + Moss:poly(Week, 2))
+AICctab(inv1, d, e, f, g)
+# Moss:Week could be captured in DOM
+h <- update(inv1, .~. + DOM*Week)
+i <- update(inv1, .~. + DOM:Week)
+AICctab(inv1, d, e, h, i) # it's not
 
-inv2 <- e
+AICctab(inv1, d, e)
+# e only has interaction, without main effects, and d only has 1.6 AICc higher for 1 df,
+# meaning it is not significantly worse than e
+inv2 <- d
 anova(inv1, inv2)
 
 
@@ -306,26 +312,29 @@ u <- update(inv2, .~. + scaleTPD*Week)
 v <- update(inv2, .~. + poly(scaleTPD, 3))
 w <- update(inv2, .~. + poly(scaleTPD, 4))
 AICctab(inv2, a, b, c, d, e, f, g, h, i, u, v, w)
+y <- update(inv2, .~. + DOM*Week)
+AICctab(inv2, i, y)
+
 # only DOM
 inv3 <- i
 
 
 a <- update(inv3, .~. - DOM + TDiv)
 b <- update(inv3, .~. + TDiv)
-c <- update(inv3, .~. + poly(TDiv,2))
+c <- update(inv3, .~. + poly(TDiv, 2))
 d <- update(inv3, .~. + TDiv*Week)
 AICctab(inv3, a, b, c, d)
 # TDiv not important
 e <- update(inv3, .~. + sqrt(UDens))
-f <- update(inv3, .~. + poly(sqrt(UDens),2))
+f <- update(inv3, .~. + poly(sqrt(UDens), 2))
 g <- update(inv3, .~. + sqrt(UDens)*Week)
-h <- update(inv3, .~. + poly(sqrt(UDens),2)*Week)
+h <- update(inv3, .~. + poly(sqrt(UDens), 2)*Week)
 AICctab(inv3, e, f, g, h)
 # UDens not important
 i <- update(inv3, .~. + TR)
 j <- update(inv3, .~. + TR*Week)
 AICctab(inv3, i, j)
-k <- update(inv3, .~. + poly(TR,2))
+k <- update(inv3, .~. + poly(TR, 2))
 AICctab(inv3, i, k)
 
 # finally, testing DOM and comparing with Moss
@@ -339,16 +348,23 @@ summary(inv3)
 
 
 hist(resid(inv3)) # very Gaussian(!), except for those two outliers
-simres <- simulateResiduals(inv3, plot = T, n = 1000) # beautiful :)
+simres <- simulateResiduals(inv3, plot = T, n = 1000) 
 testDispersion(simres) 
 testZeroInflation(simres)
 
 hist(simres) # uniform as should be
 plotResiduals(simres, form = m_guild_inv$Week)
 plotResiduals(simres, form = m_guild_inv$Moss)
+plotResiduals(simres, form = m_guild_inv$CoD)
 plotResiduals(simres, form = m_guild_inv$DOM)
 # all good
+# only Moss in DOM has slightly higher mean so sig. Levene test, but huge variance
 
+
+# further selection
+drop1(inv3)
+
+# can't drop any existing variables
 
 ### Guilds: omnivore-feeding ####
 
@@ -413,33 +429,37 @@ h <- update(omn2, .~. + UDens)
 i <- update(omn2, .~. + DOM)
 AICctab(omn2, a, b, c, d, e, f, g, h, i) 
 # logCH best, logTDens close
-# most variables not significant, but testing poly before discarding
-j <- update(omn2, .~. + poly(scaleCC, 2))
-k <- update(omn2, .~. + poly(logCH, 2)) # log better logically and statistically than scale
-l <- update(omn2, .~. + poly(logTDens, 2))
-m <- update(omn2, .~. + poly(scaleTPD, 2))
-n <- update(omn2, .~. + poly(TPD, 2))
-o <- update(omn2, .~. + poly(TDiv, 2))
-p <- update(omn2, .~. + poly(scaleUDens, 2))
-q <- update(omn2, .~. + poly(UDens, 2))
-AICctab(omn2, b, c, j, k, l, m, n, o, p, q) 
+j <- update(omn2, .~. + logCH + logTDens)
+k <- update(omn2, .~. + logCH*logTDens)
+AICctab(omn2, b, j, k) # j is best
+# testing poly before discarding
+l <- update(omn2, .~. + poly(scaleCC, 2))
+m <- update(omn2, .~. + poly(logCH, 2)) # log better logically and statistically than scale
+n <- update(omn2, .~. + poly(logTDens, 2))
+o <- update(omn2, .~. + poly(scaleTPD, 2))
+p <- update(omn2, .~. + poly(TPD, 2))
+q <- update(omn2, .~. + poly(TDiv, 2))
+r <- update(omn2, .~. + poly(scaleUDens, 2))
+s <- update(omn2, .~. + poly(UDens, 2))
+AICctab(omn2, j, l, m, n, o, p, q, r, s) 
 # poly is even worse for those variables
-# testing interaction with week for CH and TDens
-r <- update(omn2, .~. + logCH:Week) # best, but doesn't have main effect of CH
-s <- update(omn2, .~. + logCH*Week) # second best, but not full 2dAICc difference from b
-AICctab(omn2, b, c, r, s) 
-# but since s makes more sense logically (only interaction more sig than only main effect), 
-# going with full interaction
-t <- update(omn2, .~. + logCH + logTDens)
-u <- update(omn2, .~. + logCH*logTDens)
-v <- update(omn2, .~. + logTDens*Week)
-w <- update(omn2, .~. + logTDens:Week)
-x <- update(omn2, .~. + logCH:Week + logTDens) # best
-y <- update(omn2, .~. + logCH*Week + logTDens) # second best, but has main effects also, so better
-AICctab(omn2, b, c, r, s, t, u, v, w, x, y) 
-AICctab(omn2, r, s, x, y) 
 
-a <- y
+a <- j
+# testing interaction with week for CH and TDens
+b <- update(a, .~. + logCH:Week) 
+c <- update(a, .~. + logTDens:Week)
+d <- update(a, .~. + logCH:Week - logCH) 
+e <- update(a, .~. + logTDens:Week - logTDens)
+f <- update(a, .~. + logCH:Week - logCH - logTDens) 
+g <- update(a, .~. + logTDens:Week - logTDens - logCH)
+AICctab(omn2, a, b, c, d, e, f, g) 
+# TDens interaction with week is not important, but main effect is important
+AICctab(a, b, d) 
+# interaction of CH with week without its main effect is clearly the best; even though 
+# it's only interaction, dAICc and df can't be argued with
+
+
+a <- d
 b <- update(omn2, .~. + scaleTPD*Week)
 c <- update(omn2, .~. + poly(scaleTPD, 3))
 d <- update(omn2, .~. + poly(scaleTPD, 4))
@@ -484,6 +504,7 @@ AICctab(omn3, r, s, t)
 
 # final model is omn3
 
+summary(omn3)
 
 hist(resid(omn3)) 
 simres <- simulateResiduals(omn3, plot = T, n = 1000) # beautiful :)
@@ -496,8 +517,7 @@ plotResiduals(simres, form = m_guild_omn$HabClass)
 plotResiduals(simres, form = m_guild_omn$logTDens)
 plotResiduals(simres, form = m_guild_omn$logCH)
 # all good!
-
-summary(omn3)
+# only CH tests sig but the plot shows no major deviance (just overfitted)
 
 
 ### Saving data ####
