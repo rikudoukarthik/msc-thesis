@@ -512,11 +512,11 @@ m_guild_omn <- m_guild %>% filter(GuildFeed == "Omnivore")
 ## logCH:Week interaction ##
 
 # empty table to predict
-pred_data5 <- data.frame(Week = c(1, 7, 13)) %>% 
-  group_by(Week) %>% 
-  reframe(logCH = seq(min(m_guild_omn$logCH), 
-                      max(m_guild_omn$logCH), 
-                      0.01)) %>% 
+pred_data5 <- data.frame(logCH = c(
+  min(m_guild_omn$logCH), mean(m_guild_omn$logCH), max(m_guild_omn$logCH)
+)) %>% 
+  group_by(logCH) %>% 
+  reframe(Week = 1:13) %>% 
   mutate(Observer = factor("KT", levels = levels(m_guild_omn$Observer)),
          HabClass = factor("Road", levels = levels(m_guild_omn$HabClass)), # intermediate values
          logTDens = mean(m_guild_omn$logTDens),
@@ -549,19 +549,30 @@ pred_data5 <- pred_data5 %>%
   mutate(CI.U = PRED + Gauss_coeff*SE,
          CI.L = PRED - Gauss_coeff*SE) %>% 
   dplyr::select(Week, logCH, PRED, CI.L, CI.U) %>% 
-  mutate(CH = exp(logCH))
+  group_by(logCH) %>% 
+  # to plot three levels of one variable separately
+  mutate(TYPE = case_when(logCH == min(m_all$logCH) ~ min(m_all$logCH),
+                          logCH == mean(m_all$logCH) ~ mean(m_all$logCH),
+                          logCH == max(m_all$logCH) ~ max(m_all$logCH)),
+         TYPE.LABEL = case_when(logCH == min(m_all$logCH) ~ "min",
+                                logCH == mean(m_all$logCH) ~ "mean",
+                                logCH == max(m_all$logCH) ~ "max")) %>% 
+  mutate(CH = exp(logCH),
+         TYPE = exp(TYPE) %>% round(2) %>% factor(),
+         TYPE.LABEL = factor(TYPE.LABEL, levels = c("min", "mean", "max"))) %>% 
+  ungroup()
 
 
 plot_omn1 <- ggplot(pred_data5,
-                    aes(x = CH, y = PRED, 
-                        col = as.factor(Week), fill = as.factor(Week))) +
-  scale_fill_manual(values = cbPalette[c(3, 1, 7)], name = "Week") +
-  scale_colour_manual(values = cbPalette[c(3, 1, 7)], name = "Week") +
+                    aes(x = Week, y = PRED, col = TYPE.LABEL, fill = TYPE.LABEL)) +
+  scale_fill_manual(values = cbPalette[c(3, 1, 7)], name = "Canopy heterogeneity") +
+  scale_colour_manual(values = cbPalette[c(3, 1, 7)], name = "Canopy heterogeneity") +
   geom_line(linewidth = 1.5) +
   geom_ribbon(aes(ymin = CI.L, ymax = CI.U), alpha = 0.35, colour = NA) +
   scale_y_continuous(breaks = seq(0, 40, 4)) +
+  scale_x_continuous(breaks = 1:13) +
   labs(y = "Omnivore detections per point count",
-       x = "Canopy heterogeneity") +
+       x = "Week") +
   guides(col = guide_legend(title.position = "top"),
          fill = guide_legend(title.position = "top")) +
   theme(legend.position = c(0.4, 0.9), 
