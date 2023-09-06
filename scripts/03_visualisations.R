@@ -548,11 +548,12 @@ pred_data5 <- pred_data5 %>%
   mutate(SE = PRED - SE.L) %>% 
   mutate(CI.U = PRED + Gauss_coeff*SE,
          CI.L = PRED - Gauss_coeff*SE) %>% 
-  dplyr::select(Week, logCH, PRED, CI.L, CI.U)
+  dplyr::select(Week, logCH, PRED, CI.L, CI.U) %>% 
+  mutate(CH = exp(logCH))
 
 
 plot_omn1 <- ggplot(pred_data5,
-                    aes(x = logCH, y = PRED, 
+                    aes(x = CH, y = PRED, 
                         col = as.factor(Week), fill = as.factor(Week))) +
   scale_fill_manual(values = cbPalette[c(3, 1, 7)], name = "Week") +
   scale_colour_manual(values = cbPalette[c(3, 1, 7)], name = "Week") +
@@ -604,11 +605,12 @@ pred_data6 <- pred_data6 %>%
   mutate(SE = PRED - SE.L) %>% 
   mutate(CI.U = PRED + Gauss_coeff*SE,
          CI.L = PRED - Gauss_coeff*SE) %>% 
-  dplyr::select(logTDens, PRED, CI.L, CI.U)
+  dplyr::select(logTDens, PRED, CI.L, CI.U) %>% 
+  mutate(TDens = exp(logTDens))
 
 
 plot_omn2 <- ggplot(pred_data6,
-                    aes(x = logTDens, y = PRED)) +
+                    aes(x = TDens, y = PRED)) +
   geom_line(linewidth = 1.5) +
   geom_ribbon(aes(ymin = CI.L, ymax = CI.U), alpha = 0.35, colour = NA) +
   scale_y_continuous(breaks = seq(0, 40, 4), limits = c(4, 16)) +
@@ -686,5 +688,3 @@ ggsave("outputs/fig3_omnbirds.png", fig3_omnbirds,
        width = 28, height = 25, units = "cm", dpi = 300)
 
 ### ###
-
-
