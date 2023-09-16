@@ -420,7 +420,7 @@ plot_inv1 <- ggplot(pred_data3,
   scale_y_continuous(breaks = seq(0, 40, 2)) +
   scale_x_continuous(breaks = 1:13) +
   # coord_cartesian(ylim = c(2, 18)) +
-  labs(y = "Invertebrate-feeder detections per point count") +
+  labs(y = "Invertivore detections per point count") +
   guides(col = guide_legend(title.position = "top"),
          fill = guide_legend(title.position = "top")) +
   theme(legend.position = c(0.7, 0.9), 
@@ -478,7 +478,7 @@ plot_inv2 <- ggplot(pred_data4,
   geom_errorbar(aes(ymin = CI.L, ymax = CI.U), 
                 linewidth = 1, width = 0.6) +
   scale_y_continuous(breaks = seq(0, 40, 1), limits = c(1, 4)) +
-  labs(y = "Invertebrate-feeder detections per point count",
+  labs(y = "Invertivore detections per point count",
        x = "Ground vegetation") 
 
 
