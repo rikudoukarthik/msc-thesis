@@ -1,14 +1,14 @@
 ---
 title: "..."
 bibliography: ../msc-thesis.bib
-# csl: 
+csl: acta-oecologica.csl
 link-citations: yes
 output: 
   bookdown::word_document2:
     number_sections: true
     global_numbering: true
     fig_caption: yes
-    reference_docx: ../rmd_word_template_journ_guide.docx
+    reference_docx: rmd_word_template_journ_guide.docx
 editor_options: 
   chunk_output_type: console
 ---
