@@ -1,3 +1,5 @@
+# Supplementary Material
+
 # Classification of vegetation into vertical strata
 
 Regardless of taxonomic and functional identity, plants of height $\le$ 1 m above the ground classified into the 'Herb' layer (this therefore included both woody- [like Rubus] and non-woody stemmed [like graminoids] plants, but did not exclude graminoid leaves that extended beyond 1 m from the ground); plants 1--4 m in height belonged to the 'Understorey' (this included shrubs like S. aucuparia and F. alnus as well as young individuals of trees like P. abies); and plants $\ge$ 4 m in height belonged to the 'Canopy' (this occasionally included S. aucuparia).
@@ -19,3 +21,4 @@ continuous/ordinal/categorical, correlation, exclusion, random/fixed effect
 # Vegetation community composition
 
 As such, the tree community consists mostly of conifers like Norway spruce, Scots pine *Pinus sylvestris*, European larch *Larix decidua* and silver fir *Abies alba*, and broad-leaved species such as pedunculate/European oak *Quercus robur*, sessile/Cornish oak *Q. petraea*, northern red oak *Q. rubra*, silver birch *Betula pendula*, quaking/Eurasian aspen *Populus tremula*, common/European beech *Fagus sylvatica*, rowan or European mountain ash *Sorbus aucuparia*, small-leaved lime or littleleaf linden *Tilia cordata*, common/European black alder *Alnus glutinosa*, Norway maple *Acer platanoides* and sycamore maple *A. pseudoplatanus*. The commonly found shrub species are alder buckthorn *Frangula alnus*, rowan *Sorbus aucuparia* and black/European elderberry *Sambucus nigra*, while ground layer vegetation is restricted to graminoids like sedges *Carex* spp. (mostly *C. brizoides*), bramble *Rubus* sp. and European blueberry *Vaccinium myrtillus*.
+

@@ -1,0 +1,5 @@
+book_filename: "manuscript.Rmd"
+delete_merged_file: true
+rmd_files: ["index.Rmd", "01_main.Rmd"]
+rmd_subdir: "manuscript/"
+output_dir: "./"

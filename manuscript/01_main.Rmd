@@ -1,21 +1,22 @@
----
-title: 
-author: "Karthik Thrikkadeeri"
-date: "28/11/2021"
-bibliography: msc-thesis.bib
-output: 
-  word_document:
-    reference_docx: rmd_word_template.docx
-    number_sections: true
-editor_options: 
-  chunk_output_type: console
----
+# Abstract {.unnumbered}
 
-```{r setup, include=FALSE}
+TBD
+
+<!-- The general effects of canopy cover can be separated into those of heterogeneity---which might affect birds through light conditions---and those of absolute densities---which might indirectly affect other aspects of the habitat such as tree girth. -->
+
+
+# Keywords {.unnumbered}
+
+TBD
+
+\newpage
+
+```{r setup, include=FALSE, echo=FALSE, message=FALSE, warning=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
 # Introduction
+
 
 Animals assess a wide variety of environmental features at multiple scales, and make a series of hierarchical choices resulting in a preference for certain habitats over others, which is termed habitat selection [@johnson1980; @cody1985]. Broad-scale selection is reflected in species' geographic ranges and in the landscape features surrounding home ranges, while fine-scale selection is reflected in microhabitats used for foraging, reproduction, and shelter [@fretwell1969; @johnson1980; @saab1999]. This raises questions about the ways in which these preferences vary across species, space, time, etc. In birds, however, much of our knowledge on habitat selection is dominated by the breeding season---encompassing both the actual reproductive period as well as the period leading up to mating [e.g., @danchin1998; @bosco2021]. Moreover, most such studies target migratory species, whether it be in their breeding grounds [e.g., @danchin1998; @kleist2017], wintering grounds [usually in the tropics\; e.g., @strasser2019; @ruiz-sanchez2017] or stopover sites [e.g., @papageorgiou2017; @wolfe2014; @cohen2021]. This disproportionate attention is not unjustified: reproductive success and offspring survival have traditionally been strongly linked with fitness, and fitness outcomes are influenced via costs (e.g., predation risk) and benefits (e.g., food availability) of habitat use. In migrants, habitat requirements are complex and vary through the annual cycle, across their geographic range, along migratory routes, and at multiple spatial scales [e.g., @devries2018; @wolfe2014; @rodewald2004; @winker1995].
 
@@ -123,9 +124,13 @@ The measure of canopy heterogeneity used in this study is insightful, but its ac
 
 In conclusion, birds did indeed exhibit habitat selection in the autumn-winter transition, with different guilds tracking structural (such as canopy heterogeneity, tree density and ground vegetation) and biological (such as deciduous proportion) characteristics differently based on resource-use strategies. Additionally, preferences of insectivores were rather simple, specific and consistent, while those of omnivores were complex and varied with season. Our study thus sheds some light on the overlooked question of habitat selection in post-breeding temperate forest birds, and also highlights the need and potential avenues for further research expanding our knowledge on this topic.
 
-# Abstract
 
-The general effects of canopy cover can be separated into those of heterogeneity---which might affect birds through light conditions---and those of absolute densities---which might indirectly affect other aspects of the habitat such as tree girth.
+# References
+
+::: {#refs}
+:::
+
+\newpage
 
 # Tables and figures
 
@@ -144,5 +149,3 @@ The general effects of canopy cover can be separated into those of heterogeneity
 ***Figure 4: Abundance of invertebrate-feeding birds varying with habitat characteristics of each sampling point, as predicted by the best-fitting model 'inv.4'. (A) Large circular dots represent mean abundance per point count. Whiskers represent 95% CIs. (B) Line shows mean abundances and corresponding ribbon represents 95% CIs. X-axis shows proportions scaled from original range of 0--100%.***
 
 ***Figure 5: Abundance of omnivorous birds varying with habitat characteristics of each sampling point, as predicted by the best-fitting model 'omn.3'. Dark orange colour represents Week 1, pink colour represents Week 7 and dark blue represents Week 13. (A) Large circular dots represent mean abundance per point count. Whiskers represent 95% confidence intervals. (B, C) Coloured lines show mean abundances and corresponding ribbons represent 95% CIs.***
-
-# Bibliography

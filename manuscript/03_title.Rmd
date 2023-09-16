@@ -1,0 +1,31 @@
+---
+title: "..."
+author: 
+  - Karthik Thrikkadeeri:
+      email: rikudoukarthik@gmail.com
+      institute: usb
+      correspondence: true
+  - name: 
+    institute: 
+institute:
+  - usb: 'University of South Bohemia, Branišovská 1645/31A, České Budějovice 2, 370 05 České Budějovice, Czechia'
+output: 
+  bookdown::word_document2:
+    number_sections: false
+    reference_docx: ../rmd_word_template_journ_guide.docx
+    pandoc_args:
+      - '--lua-filter=scholarly-metadata.lua'
+      - '--lua-filter=author-info-blocks.lua'
+---
+
+# Acknowledgements
+
+TBD
+
+# Conflict of interest
+
+The authors declare that they have no conflicting financial or personal interests that could have influenced this study.
+
+# Supplementary Online Material (SOM)
+
+More details about the methodology, analyses and results are available online in supplementary materials.
