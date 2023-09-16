@@ -21,7 +21,7 @@ theme_set(theme_classic())
 cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", 
                 "#F0E442", "#0072A2", "#D55E00", "#CC79A7")
 cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", 
-                "#F0E442", "#0072A2", "#D55E00", "#CC79A7")
+               "#F0E442", "#0072A2", "#D55E00", "#CC79A7")
 custom_pal <- c("#d8b365", "#f5f5f5", "#5ab4ac")
 Set1 <- brewer.pal(9, name = "Set1")
 Set3 <- brewer.pal(12, name = "Set3")
@@ -55,9 +55,24 @@ sum_stat <- data.frame(
   DET.IF.RAW = birds_species_raw %>% filter(Observer == "IF") %>% nrow(),
   DET.KT.RAW = birds_species_raw %>% filter(Observer == "KT") %>% nrow(),
   DET.IF.FILT = birds_species_filt %>% filter(Observer == "IF") %>% nrow(),
-  DET.KT.FILT = birds_species_filt %>% filter(Observer == "KT") %>% nrow()
+  DET.KT.FILT = birds_species_filt %>% filter(Observer == "KT") %>% nrow(),
   
-  ) %>% 
+  DET.AVG.W01 = birds_species_filt %>% 
+    filter(Week == 1) %>% 
+    group_by(Point) %>% 
+    summarise(NO.DET = n()) %>% 
+    summarise(NO.DET = mean(NO.DET)) %>% 
+    round() %>% 
+    pull(NO.DET),
+  DET.AVG.W13 = birds_species_filt %>% 
+    filter(Week == 13) %>% 
+    group_by(Point) %>% 
+    summarise(NO.DET = n()) %>% 
+    summarise(NO.DET = mean(NO.DET)) %>% 
+    round() %>% 
+    pull(NO.DET)
+  
+) %>% 
   mutate(
     
     DET.AUD.RAW.PC = (100*DET.AUD.RAW/DET.TOT.RAW) %>% round(1),
@@ -75,6 +90,7 @@ sum_stat <- data.frame(
     
   )
 
+save(sum_stat, file = "outputs/summary_stats.RData")
 
 ### Tables  ####
 

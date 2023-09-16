@@ -12,7 +12,34 @@ TBD
 \newpage
 
 ```{r setup, include=FALSE, echo=FALSE, message=FALSE, warning=FALSE}
+
+library(tidyverse)
+library(glue)
+
+# summary stats
+load("../outputs/summary_stats.RData")
+# habvars for printing correlation
+load("../data/01_dataimport.RData")
+
+# function to add commas to big numbers in one go
+good_num <- function(number) {
+  
+  if (number < 10) {
+    xfun::numbers_to_words(number)
+  } else {
+    format(number, big.mark = ",", scientific = FALSE)
+  }
+  
+}
+
+# function for printing correlation results
+show_cor <- function(var1, var2, cor_method) {
+  cor_test <- cor.test(var1, var2, method = cor_method)
+  glue("r = {round(cor_test$estimate, 3)}, p = {round(cor_test$p.value, 3)}")
+}
+
 knitr::opts_chunk$set(echo = TRUE)
+
 ```
 
 # Introduction
@@ -70,13 +97,14 @@ For continuous or ordinal variables, both linear and polynomial terms were teste
 
 # Results
 
-A total of 7,367 detections of 69 bird species were made, of which 62% (4,527) did not meet the criteria for inclusion in the analysis. Of the 2,840 detections of 45 species anlaysed, 78% (2,209) were purely auditory, 7% (201) were purely visual and 15% (430) were both, and this did not change majorly with weeks or across points (Figure S3). The average number of detections per point count varied from 5 in Week 1 to 9 in Week 13 (Figure 2). Among 494 records of birds foraging, just two were of frugivory.
+A total of `r sum_stat$DET.TOT.RAW %>% good_num()` detections of `r sum_stat$UNIQUE.SPEC.RAW %>% good_num()` bird species were made, of which `r round(100*(sum_stat$DET.TOT.RAW - sum_stat$DET.TOT.FILT)/sum_stat$DET.TOT.RAW)`% (`r (sum_stat$DET.TOT.RAW - sum_stat$DET.TOT.FILT) %>% good_num()`) did not meet the criteria for inclusion in the analysis. Of the `r sum_stat$DET.TOT.FILT %>% good_num()` detections of `r sum_stat$UNIQUE.SPEC.FILT %>% good_num()` species analysed, `r round(sum_stat$DET.AUD.FILT.PC)`% (`r sum_stat$DET.AUD.FILT %>% good_num()`) were purely auditory, 
+`r round(sum_stat$DET.VIS.FILT.PC)`% (`r sum_stat$DET.VIS.FILT %>% good_num()`) were purely visual and `r round(sum_stat$DET.BOTH.FILT.PC)`% (`r sum_stat$DET.BOTH.FILT %>% good_num()`) were both, and this did not change majorly with weeks or across points *(Figure S3)*. The average number of detections per point count varied from `r sum_stat$DET.AVG.W01` in Week 1 to `r sum_stat$DET.AVG.W13` in Week 13 *(Figure 2)*. Among `r sum_stat$FORAGING.FILT %>% good_num()` records of birds foraging, just `r sum_stat$FORAGING.FILT.FRUIT %>% good_num()` were of frugivory.
 
-At the community level, bird abundance was affected by observer, week, canopy heterogeneity, tree density, and dominant ground vegetation and its interaction with week. In spite of the significant correlations between canopy heterogeneity and canopy cover (r = -0.533, p = 0.0017), and between canopy cover and tree density (r = 0.526, p = 0.002), canopy heterogeneity and tree density remained uncorrelated (r = -0.246, p = 0.1745). Further, tree density also correlated negatively with proportion of deciduous trees at a significant level (r = -0.545, p = 0.0013), but seemed to be the more important predictor in the models.
+At the community level, bird abundance was affected by observer, week, canopy heterogeneity, tree density, and dominant ground vegetation and its interaction with week. In spite of the significant correlations between canopy heterogeneity and canopy cover (`r show_cor(habvar$CC, habvar$CH, "pearson")`), and between canopy cover and tree density (`r show_cor(habvar$CC, habvar$TDens, "pearson")`), canopy heterogeneity and tree density remained uncorrelated (`r show_cor(habvar$CH, habvar$TDens, "pearson")`). Further, tree density also correlated negatively with proportion of deciduous trees at a significant level (`r show_cor(habvar$TPD, habvar$TDens, "pearson")`), but seemed to be the more important predictor in the models.
 
-There was an overall increase in bird abundance towards the end of the study period in all sampling points---across the five categories of ground vegetation---but the magnitude of increase was starkly different in each. Points with *Rubus* sp. and those with *Vaccinium* sp. as the dominant ground vegetation had intermediate values of both average abundance and increase in abundance with time. Points with graminoids in the ground layer had the lowest overall abundance as well as the lowest increase (Figure 3). Points with ground layers comprising moss and bare ground both had low abundances in the beginning but towards the end had the highest abundances, i.e., they showed the strongest increases. Bird abundance related positively and negatively with log-transformed variables of canopy heterogeneity and tree density respectively (Figure 3) and these trends did not change noticeably over the course of the study period.
+There was an overall increase in bird abundance towards the end of the study period in all sampling points---across the five categories of ground vegetation---but the magnitude of increase was starkly different in each. Points with *Rubus* sp. and those with *Vaccinium* sp. as the dominant ground vegetation had intermediate values of both average abundance and increase in abundance with time. Points with graminoids in the ground layer had the lowest overall abundance as well as the lowest increase *(Figure 3)*. Points with ground layers comprising moss and bare ground both had low abundances in the beginning but towards the end had the highest abundances, i.e., they showed the strongest increases. Bird abundance related positively and negatively with log-transformed variables of canopy heterogeneity and tree density respectively *(Figure 3)* and these trends did not change noticeably over the course of the study period.
 
-Within the bird community, habitat selection was very different between invertivores and omnivores (Table 3). Invertivore abundance was affected by observer, proportion of deciduous trees and dominant ground vegetation. Abundance was lower in sampling points with 'Graminoid' ground vegetation than points with other ground layers (Figure 4). Abundance also decreased with deciduous proportion and, notably, since a polynomial term did not give a better fit, there is no evidence for the notion of mixed forests with intermediate deciduous proportions having higher diversity and abundance. Neither of the two trends changed detectably with time.
+Within the bird community, habitat selection was very different between invertivores and omnivores *(Table 3)*. Invertivore abundance was affected by observer, proportion of deciduous trees and dominant ground vegetation. Abundance was lower in sampling points with 'Graminoid' ground vegetation than points with other ground layers *(Figure 4)*. Abundance also decreased with deciduous proportion and, notably, since a polynomial term did not give a better fit, there is no evidence for the notion of mixed forests with intermediate deciduous proportions having higher diversity and abundance. Neither of the two trends changed detectably with time.
 
 On the other hand, omnivore abundance was affected by observer, habitat class, tree density, and canopy heterogeneity, and it changed with time. Abundance of omnivores generally increased as the season progressed, and decreased with increasing tree density, but overall was higher in forest edges than in forest interiors or roadside patches (Figure 5). With canopy heterogeneity, the initial trend appeared to be slightly negative yet almost insignificant, but with every week the trend became more and more positive, such that in week 13 it was very strong. In other words, omnivores were initially indifferent to canopy heterogeneity, and as the season progressed their abundance did not change in relatively homogenous points, but greatly increased in highly heterogenous points (Figure 5).
 
